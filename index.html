@@ -1,0 +1,26 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI Image Generator (Chat)</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <div class="container">
+        <h1>AI Image Generator</h1>
+        <div id="chat-history">
+            <p class="system-message">プロンプトを入力して「送信」ボタンを押してください。</p>
+        </div>
+        <div class="input-area">
+            <input type="text" id="prompt-input" placeholder="作りたい画像の英語プロンプトを入力">
+            <button id="send-btn">送信</button>
+        </div>
+        <div id="loading" class="hidden">
+            <div class="spinner"></div>
+            <p>生成中です... (15〜30秒かかります)</p>
+        </div>
+    </div>
+    <script src="script.js"></script>
+</body>
+</html>
