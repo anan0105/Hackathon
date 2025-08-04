@@ -3,22 +3,29 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>AI Image Generator (Chat)</title>
+    <title>AI Generator</title>
     <link rel="stylesheet" href="style.css">
 </head>
 <body>
-    <div class="container">
-        <h1>AI Image Generator</h1>
-        <div id="chat-history">
-            <p class="system-message">プロンプトを入力して「送信」ボタンを押してください。</p>
-        </div>
-        <div class="input-area">
-            <input type="text" id="prompt-input" placeholder="作りたい画像の英語プロンプトを入力">
-            <button id="send-btn">送信</button>
-        </div>
-        <div id="loading" class="hidden">
-            <div class="spinner"></div>
-            <p>生成中です... (15〜30秒かかります)</p>
+    <div class="app-layout">
+        <nav class="hotbar">
+            <button class="nav-btn active" data-room="image">🖼️ 画像生成</button>
+            <button class="nav-btn" data-room="music">🎵 音楽生成</button>
+        </nav>
+
+        <div class="container">
+            <h1 id="room-title">AI Image Generator</h1>
+            <div id="chat-history">
+                <p class="system-message">プロンプトを入力して「送信」ボタンを押してください。</p>
+            </div>
+            <div class="input-area">
+                <input type="text" id="prompt-input" placeholder="作りたいコンテンツの英語プロンプトを入力">
+                <button id="send-btn">送信</button>
+            </div>
+            <div id="loading" class="hidden">
+                <div class="spinner"></div>
+                <p>生成中です...</p>
+            </div>
         </div>
     </div>
     <script src="script.js"></script>
