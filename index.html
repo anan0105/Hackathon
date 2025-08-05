@@ -8,9 +8,17 @@
 </head>
 <body>
     <div class="app-layout">
-        <nav class="hotbar">
+        
+        <button id="sidebar-toggle-btn">
+            <span></span>
+            <span></span>
+            <span></span>
+        </button>
+
+        <nav id="sidebar" class="hotbar">
             <button class="nav-btn active" data-room="image">🖼️ 画像生成</button>
             <button class="nav-btn" data-room="music">🎵 音楽生成</button>
+            <button class="nav-btn" data-room="video">🎬 動画生成</button>
         </nav>
 
         <div class="container">
@@ -19,8 +27,9 @@
                 <p class="system-message">プロンプトを入力して「送信」ボタンを押してください。</p>
             </div>
             <div class="input-area">
-                <input type="text" id="prompt-input" placeholder="作りたいコンテンツの英語プロンプトを入力">
+                <input type="text" id="prompt-input" placeholder="作りたいコンテンツの日本語プロンプトを入力">
                 <button id="send-btn">送信</button>
+                <button id="play-btn" disabled>再生</button>
             </div>
             <div id="loading" class="hidden">
                 <div class="spinner"></div>
