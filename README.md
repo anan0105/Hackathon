@@ -1,14 +1,9 @@
 # MUSEmaker
 
 ## アプリの概要
-  - ミーム生成アプリ
+MUSEmakerは、テキスト入力をもとに**ミーム画像・音楽・GIF・動画**を自動生成してWeb上で表示・再生できるWebアプリケーションです。
 
-
-# 🖼️🎵 Text-to-Multimedia Generator
-
-このプロジェクトは、**テキスト入力をもとに画像・音楽・GIF・動画を自動生成してWeb上で表示・再生するWebアプリケーション**です。
-
-以下のようなコンテンツを、すべてブラウザ上で生成・再生できます：
+以下のコンテンツをすべてブラウザ上で生成・再生可能です：
 
 - テキストから画像生成（text-to-image）
 - テキストから音楽生成（text-to-music）
@@ -19,7 +14,7 @@
 
 ## デモ
 
-👉 [https://your-app-url.com](https://your-app-url.com)（※デプロイ済みの場合）
+👉 [https://your-app-url.com](https://your-app-url.com)
 
 以下はデモの一例です：
 
@@ -27,28 +22,32 @@
 
 ---
 
-## システム構成
+## 利用方法
 
-```
-ユーザー → Web UI (Next.jsなど) → API Gateway → Lambda関数
-                           ↘ Amazon S3（画像・音声・動画保存）
-```
-
-- テキスト入力 → API呼び出し（画像/音楽/GIF/動画生成）
-- 画像生成：Stable Diffusion / DALL·E API
-- 音楽生成：Riffusion / MusicGen
-- GIF生成：テンプレート合成処理
-- 動画合成：FFmpeg によるGIF＋音楽のマージ
-- メディア保存：S3 → Web上で再生
+1. 上記リンクにアクセスします。
+2. テキストボックスに任意のプロンプト（例：「猫がDJをしている」）を入力します。
+3. 「生成」ボタンをクリックすると、以下のような結果が順次表示されます：
+   - 画像が表示される
+   - 音楽が再生される
+   - GIFが表示される
+   - GIF＋音楽を合成した動画が再生される
+4. 必要に応じて、生成されたメディアをダウンロードすることもできます。
 
 ---
 
-## ✨ 主な機能
+## システム構成
 
-- ✅ テキストから画像を生成して表示
-- ✅ テキストから音楽を生成して再生
-- ✅ テキストからGIFを生成して表示
-- ✅ テキストからGIF＋音楽を合成して動画生成＆再生
+```
+ユーザー → Web UI (HTML/CSS/JavaScript) → API Gateway → Lambda関数
+                                ↘ Amazon S3（画像・音声・動画保存）
+```
+
+- テキスト入力 → API呼び出し（画像/音楽/GIF/動画生成）
+- 画像生成：Amazon Titan Image Generator v2
+- 音楽生成：MusicGen
+- GIF生成：テンプレート合成処理
+- 動画合成：FFmpeg によるGIF＋音楽のマージ
+- メディア保存：S3 → Web上で再生
 
 ---
 
@@ -56,17 +55,35 @@
 
 | 区分 | 技術スタック |
 |------|--------------|
-| フロントエンド | Next.js / React / Tailwind CSS |
-| バックエンド | AWS Lambda / API Gateway |
-| ストレージ | Amazon S3 |
-| 画像生成 | OpenAI DALL·E API / Stable Diffusion |
-| 音楽生成 | Riffusion / MusicGen |
-| GIF生成 | 自作テンプレート合成 or Animate API |
-| 動画生成 | FFmpeg |
+| Front End | HTML / CSS / JavaScript |
+| Back End | Python |
+| AI Model | Amazon Titan Image Generator v2 / MusicGen |
+| Cloud Service | AWS / Replicate |
 
 ---
 
-## 🔧 セットアップ方法
+## 技術詳細
+
+### 🔹 AWSサービス構成
+
+- **API Gateway**: フロントエンドからのHTTPリクエストを受け取り、バックエンド（Lambda）にルーティング。
+- **AWS Lambda**: 各生成処理を非同期で実行（画像生成、音楽生成、GIF作成、動画合成など）
+- **Step Functions**: GIF＋音楽の合成やメディアの順序処理など、複数Lambda関数のワークフローを管理。
+- **Amazon S3**: 生成された画像・音楽・動画を保存し、Webでのアクセスを可能に。
+- **Amazon Bedrock**: Titan Image Generator v2を提供する生成AIプラットフォーム。
+
+### 🔹 Replicate
+さまざまな生成AIモデルをAPI経由で簡単に利用できるサービス。MusicGenをはじめとするAIモデルをノーコードで呼び出し可能。認証トークンとエンドポイントURLを使ってAPI操作。
+
+### 🔹 Amazon Titan Image Generator v2
+画像生成モデル。プロンプトに基づいてリアルで高解像度な画像を生成可能。
+
+### 🔹 MusicGen
+音楽生成モデル。プロンプトから自然な音楽を数秒～数分単位で生成可能で、スタイル指定やジャンル制御にも対応。Replicateを通じてAPI利用可能。
+
+---
+
+## セットアップ方法
 
 ### 1. リポジトリのクローン
 
@@ -96,15 +113,17 @@ npm install
 ```bash
 npm run dev
 ```
+---
+
+## チームメンバー
+
+| 名前 | GitHubアカウント |
+|------|------------------|
+| Shuichiro Nomura | [https://github.com/shuichiro-nomura](https://github.com/shuichiro-nomura) |
+| （他メンバーを追加してください） | [GitHub URL] |
 
 ---
 
-## 🙋‍♀️ 貢献
-
-バグ報告や提案、機能追加のPull Requestを歓迎します！
-
----
-
-## 📬 お問い合わせ
+## お問い合わせ
 
 何かご不明な点がありましたら、GitHub Issues にてご連絡ください。
