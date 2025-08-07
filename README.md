@@ -1,4 +1,4 @@
-## Hackathon
+# MUSEmaker
 
 ## アプリの概要
   - ミーム生成アプリ
@@ -10,14 +10,14 @@
 
 以下のようなコンテンツを、すべてブラウザ上で生成・再生できます：
 
-- 🖼️ テキストから画像生成（text-to-image）
-- 🎵 テキストから音楽生成（text-to-music）
-- 🌀 テキストからGIF生成（text-to-gif）
-- 🎬 テキストからGIFと音楽を合成した動画生成（text-to-video）
+- テキストから画像生成（text-to-image）
+- テキストから音楽生成（text-to-music）
+- テキストからGIF生成（text-to-gif）
+- テキストからGIFと音楽を合成した動画生成（text-to-video）
 
 ---
 
-## 🚀 デモ
+## デモ
 
 👉 [https://your-app-url.com](https://your-app-url.com)（※デプロイ済みの場合）
 
@@ -27,7 +27,7 @@
 
 ---
 
-## 🏗️ システム構成
+## システム構成
 
 ```
 ユーザー → Web UI (Next.jsなど) → API Gateway → Lambda関数
@@ -52,7 +52,7 @@
 
 ---
 
-## 🛠 使用技術
+## 使用技術
 
 | 区分 | 技術スタック |
 |------|--------------|
@@ -96,25 +96,6 @@ npm install
 ```bash
 npm run dev
 ```
-
----
-
-## 📁 フォルダ構成
-
-```plaintext
-├── frontend/         # Next.js フロントエンドアプリ
-├── backend/          # Lambda関数やAPI処理
-├── media/            # 生成された画像・音楽・動画ファイル
-├── scripts/          # FFmpegなどの補助スクリプト
-└── README.md
-```
-
----
-
-## 📄 ライセンス
-
-MIT License  
-本プロジェクトは研究・教育目的での使用を想定しています。
 
 ---
 
