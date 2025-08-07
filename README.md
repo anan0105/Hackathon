@@ -158,8 +158,9 @@ npm run dev
 
 | 名前 | GitHubアカウント |
 |------|------------------|
-| Shuichiro Nomura | [https://github.com/shuichiro-nomura](https://github.com/shuichiro-nomura) |
-| （他メンバーを追加してください） | [GitHub URL] |
+| Anan Eguchi | [https://github.com/anan0105](https://github.com/anan0105) |
+| Shuichiro Nomura | [https://github.com/Shuichiro-labo](https://github.com/Shuichiro-labo) |
+| Ryuta Sugai | [https://github.com/Ryuta-work](https://github.com/Ryuta-work) |
 
 ---
 
