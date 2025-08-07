@@ -15,12 +15,12 @@ def lambda_handler(event, context):
     try:
         # eventから直接 'id' を取得
         prediction_id = event.get('id')
-        print(f"Received prediction_id: {prediction_id}") # ★★★ ログを追加 ★★★
+        print(f"Received prediction_id: {prediction_id}") 
         if not prediction_id:
             raise ValueError("prediction_id is required")
 
         status_url = f"{REPLICATE_API_URL}/{prediction_id}"
-        print(f"status_url: {status_url}") # ★★★ ログを追加 ★★★
+        print(f"status_url: {status_url}") 
         headers = { "Authorization": f"Token {REPLICATE_API_TOKEN}" }
         req = urllib.request.Request(status_url, headers=headers)
 

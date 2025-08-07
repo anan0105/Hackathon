@@ -55,6 +55,7 @@ body {
     background-color: #007bff;
 }
 
+
 /* --- ハンバーガーメニューボタン --- */
 #sidebar-toggle-btn {
     position: fixed;
@@ -81,6 +82,31 @@ body {
     background: white;
     border-radius: 2px;
 }
+
+
+#home-btn {
+    position: fixed;
+    top: 15px;
+    left: 70px; /* ハンバーガーボタンの右隣に配置 */
+    width: 40px;
+    height: 40px;
+    background: #34495e;
+    color: white;
+    border: none;
+    border-radius: 5px;
+    cursor: pointer;
+    z-index: 1001;
+    font-size: 20px; /* アイコンのサイズ調整 */
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    transition: background-color 0.3s;
+}
+
+#home-btn:hover {
+    background-color: #4e6a85; /* ホバー時の色を少し変える */
+}
+
 
 
 /* --- メインコンテンツ --- */

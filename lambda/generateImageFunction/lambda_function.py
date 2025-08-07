@@ -13,7 +13,7 @@ BUCKET_NAME = 'ai-hackathon-output-0002' # ご自身のS3バケット名
 
 def lambda_handler(event, context):
     try:
-        # ★★★ここを修正★★★
+
         prompt = event.get('prompt', 'a beautiful cat')
         
         # プロンプトが空の場合のデフォルト値を設定

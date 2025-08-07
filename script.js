@@ -1,11 +1,12 @@
+// ご自身のAPI GatewayのURLに書き換えてください
+const API_BASE_URL = 'https://d7f37136t4.execute-api.us-east-1.amazonaws.com/prod_3'; // 例
 
-
-// ★★★ ご自身のAPI GatewayのURLに書き換えてください ★★★
-const API_BASE_URL = 'https://szyfr76o9g.execute-api.us-east-1.amazonaws.com/prod_3'; // 例
 
 // 各機能のエンドポイントURLを設定
 const API_ENDPOINTS = {
     image: `${API_BASE_URL}/generate-image`,
+    gif_start: `${API_BASE_URL}/start-gif-generate`,   
+    gif_status: `${API_BASE_URL}/check-gif-status`,    
     music_start: `${API_BASE_URL}/start-music-generation`,
     music_status: `${API_BASE_URL}/check-music-status`,
     video_start: `${API_BASE_URL}/start-video-generation`,
@@ -15,9 +16,14 @@ const API_ENDPOINTS = {
 
 let currentRoom = 'image';
 let pollingInterval;
-let currentAudio = null; // ★★★ 再生するaudio要素を保存する変数 ★★★
+let currentAudio = null; 
 
-
+const chatHistories = {
+    image: '<p class="system-message">静止画生成ルームへようこそ！</p>', // 文言を修正
+    gif: '<p class="system-message">GIF画像生成ルームへようこそ！</p>', // ▼▼▼ GIF用の履歴を追加 ▼▼▼
+    music: '<p class="system-message">音楽生成ルームへようこそ！</p>',
+    video: '<p class="system-message">動画生成ルームへようこそ！</p>'
+};
 
 
 // --- HTML要素の取得 ---
@@ -30,38 +36,50 @@ const chatHistoryDiv = document.getElementById('chat-history');
 const loadingDiv = document.getElementById('loading');
 const roomTitle = document.getElementById('room-title');
 const navButtons = document.querySelectorAll('.nav-btn');
-
+const homeBtn = document.getElementById('home-btn'); 
 
 // サイドバー開閉ボタン
 sidebarToggleBtn.addEventListener('click', () => {
     sidebar.classList.toggle('open');
 });
 
+// タイトルに戻るボタンの処理
+homeBtn.addEventListener('click', () => {
+    window.location.href = 'title.html'; 
+});
+
 
 // ルーム切り替え処理
 navButtons.forEach(button => {
     button.addEventListener('click', () => {
+        chatHistories[currentRoom] = chatHistoryDiv.innerHTML;
         currentRoom = button.dataset.room;
+        chatHistoryDiv.innerHTML = chatHistories[currentRoom];
+
         navButtons.forEach(btn => btn.classList.remove('active'));
         button.classList.add('active');
-        chatHistoryDiv.innerHTML = '';
         if (pollingInterval) clearInterval(pollingInterval);
+
 
         if (currentRoom === 'image') {
             roomTitle.textContent = 'AI Image Generator';
             promptInput.placeholder = '作りたい画像の日本語プロンプトを入力';
-            addSystemMessage('画像生成ルームへようこそ！');
+        } else if (currentRoom === 'gif') {
+            roomTitle.textContent = 'AI GIF Generator';
+            promptInput.placeholder = '作りたいGIFアニメの日本語プロンプトを入力';
         } else if (currentRoom === 'music') {
             roomTitle.textContent = 'AI Music Generator';
             promptInput.placeholder = '作りたい音楽の日本語プロンプトを入力';
-            addSystemMessage('音楽生成ルームへようこそ！');
         } else {
             roomTitle.textContent = 'AI Video Generator';
             promptInput.placeholder = '作りたい動画の日本語プロンプトを入力';
-            addSystemMessage('動画生成ルームへようこそ！');
         }
+
+        
+        chatHistoryDiv.scrollTop = chatHistoryDiv.scrollHeight;
     });
 });
+
 
 const TRANSLATE_API_URL = 'https://script.google.com/macros/s/AKfycbysDLQt1Di1iGqpJetaW_uEtW2tb0DqSoAq2sDWF-_gpSm8veAUPDtl9BWzaT-t6xOx/exec';
 
@@ -79,26 +97,26 @@ sendBtn.addEventListener('click', async () => {
     if (pollingInterval) clearInterval(pollingInterval);
 
     try {
-        // --- 1. 日本語を英語に翻訳 ---
         addSystemMessage('日本語を英語に翻訳中...');
         const translateResponse = await fetch(`${TRANSLATE_API_URL}?text=${encodeURIComponent(japanesePrompt)}`);
-        if (!translateResponse.ok) {
-            throw new Error('翻訳APIでエラーが発生しました。');
-        }
+        if (!translateResponse.ok) throw new Error('翻訳APIでエラーが発生しました。');
         const translationData = await translateResponse.json();
         const englishPrompt = translationData.translated;
 
         addSystemMessage(`翻訳結果: ${englishPrompt}`);
         console.log(`Translated to English: ${englishPrompt}`);
 
-        // --- 2. 翻訳後の英語プロンプトでAIを呼び出す ---
+
         if (currentRoom === 'image') {
             await handleImageGeneration(englishPrompt);
-        } else if (currentRoom === 'music') { // ★★★ else if に変更 ★★★
+        } else if (currentRoom === 'gif') {
+            await handleGifGeneration(englishPrompt);
+        } else if (currentRoom === 'music') {
             await handleMusicGeneration(englishPrompt);
-        } else if (currentRoom === 'video') { // ★★★ videoの場合の処理を追加 ★★★
+        } else if (currentRoom === 'video') { 
             await handleVideoGeneration(englishPrompt);
         }
+
 
     } catch (error) {
         addErrorMessage(error.message);
@@ -107,7 +125,7 @@ sendBtn.addEventListener('click', async () => {
     }
 });
 
-// 再生ボタンの処理 ★★★ 新しく追加 ★★★
+// 再生ボタンの処理
 playBtn.addEventListener('click', () => {
     if (currentAudio) {
         currentAudio.play();
@@ -122,6 +140,10 @@ promptInput.addEventListener('keypress', (event) => {
     }
 });
 
+
+
+
+
 // --- 画像生成処理（プロキシ統合用） ---
 async function handleImageGeneration(prompt) {
     try {
@@ -132,10 +154,9 @@ async function handleImageGeneration(prompt) {
         });
         if (!response.ok) throw new Error(`APIエラー: ${response.statusText}`);
         
-        // ★★★ 修正箇所 ★★★
         const data = await response.json();
-        const responseBody = JSON.parse(data.body); // bodyの中身を解釈
-        addImageMessage(responseBody.imageUrl);    // bodyの中から取得
+        const responseBody = JSON.parse(data.body); 
+        addImageMessage(responseBody.imageUrl);    
 
     } catch (error) {
         addErrorMessage(error.message);
@@ -146,10 +167,88 @@ async function handleImageGeneration(prompt) {
     }
 }
 
+
+
+
+
+
+// handleGifGeneration関数をStep Functions用に全面改訂
+async function handleGifGeneration(prompt) {
+    try {
+        addSystemMessage("GIF生成ワークフローを開始します...");
+        const startResponse = await fetch(API_ENDPOINTS.gif_start, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ prompt: prompt }),
+        });
+        if (!startResponse.ok) throw new Error(`ワークフローの開始に失敗: ${await startResponse.text()}`);
+        
+        const startData = await startResponse.json();
+        const responseBody = JSON.parse(startData.body);
+        const executionArn = responseBody.executionArn;
+
+
+
+        if (!executionArn) throw new Error('実行IDの取得に失敗しました。');
+        addSystemMessage(`実行ID: ${executionArn.split(':').pop()} で生成中です...`);
+
+        pollingInterval = setInterval(async () => {
+            try {
+
+                const statusResponse = await fetch(API_ENDPOINTS.gif_status, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({ executionArn: executionArn })
+                });
+
+
+                // 以降の処理は同じ
+                if (statusResponse.status === 403) throw new Error('認証エラー(403)が発生しました。APIの認証設定を確認してください。');
+                if (!statusResponse.ok) throw new Error(`ステータスの確認に失敗しました: ${statusResponse.status}`);
+
+
+                const statusGif = await statusResponse.json();
+                const statusData = JSON.parse(statusGif.body);
+
+
+
+                if (statusData.status === 'SUCCEEDED') {
+                    clearInterval(pollingInterval);
+                    addSystemMessage("GIF生成が完了しました！");
+                    // outputはさらにJSON文字列になっているので二重にパース
+                    const finalOutput = JSON.parse(statusData.output);
+                    addImageMessage(finalOutput.gifUrl);
+                    loadingDiv.classList.add('hidden');
+                    sendBtn.disabled = false;
+                } else if (statusData.status === 'FAILED') {
+                    clearInterval(pollingInterval);
+                    throw new Error(`生成に失敗しました: ${statusData.output}`);
+                }
+                // 'RUNNING'の間は待機
+            } catch (error) {
+                clearInterval(pollingInterval);
+                addErrorMessage(error.message);
+                loadingDiv.classList.add('hidden');
+                sendBtn.disabled = false;
+            }
+        }, 5000);
+
+    } catch (error) {
+        addErrorMessage(error.message);
+        loadingDiv.classList.add('hidden');
+        sendBtn.disabled = false;
+    }
+}
+
+
+
+
+
 // --- 音楽生成処理 ---
 async function handleMusicGeneration(prompt) {
     try {
-        // 1. 生成開始リクエスト
         const startResponse = await fetch(API_ENDPOINTS.music_start, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
@@ -158,39 +257,36 @@ async function handleMusicGeneration(prompt) {
         if (!startResponse.ok) throw new Error(`APIエラー (start)`);
         
         const startData = await startResponse.json();
-        const responseBody = JSON.parse(startData.body); // bodyの中身を解釈
-        const predictionId = responseBody.prediction_id; // bodyの中から取得
+        const responseBody = JSON.parse(startData.body);
+        const predictionId = responseBody.prediction_id;
 
         if (!predictionId) throw new Error('生成ジョブの開始に失敗。');
 
-        // ★★★ このログでIDとURLを確認 ★★★
         console.log("取得したPrediction ID:", predictionId);
-        console.log("これからポーリングするURL:", `${API_ENDPOINTS.music_status}?id=${predictionId}`);
-
-        // 2. 状況確認を5秒おきに開始（ポーリング）
-        const pollingInterval = setInterval(async () => {
+        
+        pollingInterval = setInterval(async () => {
             try {
                 const statusResponse = await fetch(API_ENDPOINTS.music_status, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ id: predictionId })
                 });
-                if (!statusResponse.ok) throw new Error(`APIエラー (status)`);
+                if (!statusResponse.ok) {
+                    clearInterval(pollingInterval);
+                    throw new Error(`APIエラー (status)`);
+                }
                 
-                const musicStatusData = await musicStatusResponse.json();
-                const musicStatusBody = JSON.parse(musicStatusData.body); // bodyの中身を解釈
+                const statusData = await statusResponse.json();
+                const statusBody = JSON.parse(statusData.body);
 
-                console.log("ポーリング中だよ")
-
-                if (musicStatusBody.status === 'composition_started') {
-                    console.log("成功だよ")
+                if (statusBody.status === 'succeeded') {
                     clearInterval(pollingInterval);
-                    const executionArn = musicStatusBody.execution_arn;
-                    addSystemMessage("動画の合成を開始しました...");
-                    startSecondPolling(executionArn);
-                } else if (musicStatusBody.status === 'failed') {
+                    addAudioMessage(statusBody.output);
+                    loadingDiv.classList.add('hidden');
+                    sendBtn.disabled = false;
+                } else if (statusBody.status === 'failed' || statusBody.status === 'canceled') {
                     clearInterval(pollingInterval);
-                    throw new Error(`音楽生成に失敗: ${musicStatusBody.error}`);
+                    throw new Error(`生成に失敗: ${statusBody.error}`);
                 }
             } catch (error) {
                 clearInterval(pollingInterval);
@@ -212,7 +308,6 @@ async function handleVideoGeneration(prompt) {
     if (pollingInterval) clearInterval(pollingInterval);
 
     try {
-        // --- 1. 生成開始リクエスト ---
         addSystemMessage("画像生成と音楽生成を開始します...");
         const startResponse = await fetch(API_ENDPOINTS.video_start, {
             method: 'POST',
@@ -222,7 +317,7 @@ async function handleVideoGeneration(prompt) {
         if (!startResponse.ok) throw new Error(`APIエラー (start)`);
 
         const startData = await startResponse.json();
-        const responseBody = JSON.parse(startData.body); // bodyの中身を解釈
+        const responseBody = JSON.parse(startData.body); 
         
         const imageS3Url = responseBody.imageUrl;
         const musicPredictionId = responseBody.prediction_id;
@@ -232,10 +327,6 @@ async function handleVideoGeneration(prompt) {
         addImageMessage(imageS3Url);
         addSystemMessage("音楽の生成完了を待っています...");
 
-        console.log("取得したMusic Prediction ID:", musicPredictionId);
-        console.log("これからポーリングするURL:", `${API_ENDPOINTS.video_status}?id=${musicPredictionId}`);
-
-        // --- 2. 第1ポーリング：音楽の完了と動画合成の開始を確認 ---
         pollingInterval = setInterval(async () => {
             try {
                 const musicStatusResponse = await fetch(API_ENDPOINTS.music_composition_check, {
@@ -248,13 +339,10 @@ async function handleVideoGeneration(prompt) {
                 });
                 if (!musicStatusResponse.ok) throw new Error(`APIエラー (music_composition_check)`);
 
-                console.log("ポーリング中だよ")
-                        
                 const musicStatusData = await musicStatusResponse.json();
-                const musicStatusBody = JSON.parse(musicStatusData.body); // bodyの中身を解釈
+                const musicStatusBody = JSON.parse(musicStatusData.body); 
 
                 if (musicStatusBody.status === 'composition_started') {
-                    console.log("成功だよ")
                     clearInterval(pollingInterval);
                     const executionArn = musicStatusBody.execution_arn;
                     addSystemMessage("動画の合成を開始しました...");
@@ -263,7 +351,6 @@ async function handleVideoGeneration(prompt) {
                     clearInterval(pollingInterval);
                     throw new Error(`音楽生成に失敗: ${musicStatusBody.error}`);
                 }
-                // 'processing'の間は待機
             } catch (error) {
                 clearInterval(pollingInterval);
                 addErrorMessage(error.message);
@@ -283,42 +370,33 @@ async function handleVideoGeneration(prompt) {
 function startSecondPolling(executionArn) {
     pollingInterval = setInterval(async () => {
         try {
-            const videoStatusResponse = await fetch(API_ENDPOINTS.video_status, { // video_statusを呼び出し
+            const videoStatusResponse = await fetch(API_ENDPOINTS.video_status, { 
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ execution_arn: executionArn })
             });
             if (!videoStatusResponse.ok) throw new Error(`APIエラー (video_status)`);
 
-            console.log("第二ポーリング中だよ")
-            
             const videoStatusData = await videoStatusResponse.json();
-            const videoStatusBody = JSON.parse(videoStatusData.body); // bodyの中身を解釈
-
-
+            const videoStatusBody = JSON.parse(videoStatusData.body); 
             
             if (videoStatusBody.status === 'SUCCEEDED') {
-                console.log("第二ポーリング成功だよ")
-                console.log("動画のurl:",videoStatusBody.output)
                 clearInterval(pollingInterval);
-                addVideoMessage(videoStatusBody.output); // 最終的な動画URLを表示
+                addVideoMessage(videoStatusBody.output); 
                 loadingDiv.classList.add('hidden');
                 sendBtn.disabled = false;
             } else if (videoStatusBody.status === 'FAILED') {
                 clearInterval(pollingInterval);
                 throw new Error(`動画合成に失敗しました。`);
             }
-            // 'RUNNING'の間は待機
         } catch (error) {
             clearInterval(pollingInterval);
             addErrorMessage(error.message);
             loadingDiv.classList.add('hidden');
             sendBtn.disabled = false;
         }
-    }, 10000); // 動画合成は時間がかかるため10秒おきに確認
+    }, 10000); 
 }
-
-
 
 
 
@@ -353,21 +431,15 @@ function addSystemMessage(text) {
     chatHistoryDiv.appendChild(systemMessage);
 }
 
-// 音楽プレーヤーを画面に表示する関数
 function addAudioMessage(url) {
     const audioContainer = document.createElement('div');
     audioContainer.classList.add('audio-container');
     const audio = document.createElement('audio');
-    audio.controls = true; // 操作パネルは表示したまま
+    audio.controls = true; 
     audio.preload = 'auto';
     audio.src = url;
-
-    // audio要素をグローバル変数に保存
     currentAudio = audio;
-    
-    // 再生ボタンを有効化
     playBtn.disabled = false;
-
     audioContainer.appendChild(audio);
     chatHistoryDiv.appendChild(audioContainer);
 }
@@ -380,14 +452,23 @@ function addVideoMessage(url) {
     video.preload = 'auto';
     video.src = url;
     video.playsInline = true;
-
-    // video要素をグローバル変数に保存
-    // ★★★ このままだと音楽と競合するため、currentMediaなどに変更するのが望ましい ★★★
     currentAudio = video; 
-    
-    // 既存の再生ボタンを有効化
     playBtn.disabled = false;
-
     container.appendChild(video);
     chatHistoryDiv.appendChild(container);
 }
+
+window.addEventListener('load', () => {
+    const params = new URLSearchParams(window.location.search);
+    const room = params.get('room');
+
+    if (room) {
+        const targetButton = document.querySelector(`.nav-btn[data-room="${room}"]`);
+        if (targetButton) {
+            targetButton.click();
+        }
+    } else {
+        // デフォルトのルームの履歴を表示
+        chatHistoryDiv.innerHTML = chatHistories[currentRoom];
+    }
+});
