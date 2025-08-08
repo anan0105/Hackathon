@@ -1,14 +1,29 @@
-# MUSEmaker
-仮
+# MuseMaker
+
 ## アプリの概要
-MUSEmakerは、テキスト入力をもとに**画像・音楽・GIF・動画**を自動生成してWeb上で表示・再生できるアプリケーションです。
+MuseMakerは、テキスト入力をもとに**画像・音楽・音楽付き静止画・GIF・ループ動画**を自動生成し、Web上で表示・再生できるアプリケーションです。
 
 以下のコンテンツをすべてブラウザ上で生成・再生可能です：
 
 - テキストから画像生成（text-to-image）
 - テキストから音楽生成（text-to-music）
+- テキストから音楽付き静止画生成（text-to-image-with-music）
 - テキストからGIF生成（text-to-gif）
-- テキストからGIFと音楽を合成した動画生成（text-to-video）
+- テキストからループ動画生成（text-to-video）
+
+---
+
+## 作成した背景
+近年、生成AI技術の進歩により、テキストから画像や音楽を生成するサービスは数多く登場しています。しかし、**2025年8月現在（個人調べ）、Web上でGIFアニメーションと音声を組み合わせた動画を自動生成できるサービスは存在しません**。
+
+既存の動画編集ツールやアニメーション作成ソフトは、インストールや複雑な操作が必要で、初心者や非エンジニアにとってはハードルが高いものでした。
+
+そこでMuseMakerは、以下の点を目的として開発されました：
+
+- ブラウザ上だけで完結する簡単な操作性
+- GIFと音声を合成した動画生成の自動化
+- 画像・音楽・GIF・動画など複数形式のメディア生成を1つのUIに統合
+- 個人でも気軽にミームやオリジナルコンテンツを作れる環境の提供
 
 ---
 
@@ -21,7 +36,7 @@ MUSEmakerは、テキスト入力をもとに**画像・音楽・GIF・動画**�
 ![demo](demo.gif)
 
 ---
-仮
+
 ## 利用方法
 
 1. 上記リンクにアクセスします。
@@ -40,9 +55,10 @@ MUSEmakerは、テキスト入力をもとに**画像・音楽・GIF・動画**�
 | 区分 | 技術スタック |
 |------|--------------|
 | Front End | HTML / CSS / JavaScript |
-| Back End | Python |
+| Back End | Python / FFmpeg |
 | AI Model | Amazon Titan Image Generator v2 / MusicGen |
 | Cloud Service | AWS / Replicate |
+| Other | VSCode / GitHub |
 
 ---
 
@@ -120,38 +136,6 @@ MUSEmakerは、テキスト入力をもとに**画像・音楽・GIF・動画**�
 3. 完成した動画ファイルをS3に保存  
 4. 動画URLをフロントエンドへ返却し、ブラウザで再生
 
----
-
-## セットアップ方法
-
-### 1. リポジトリのクローン
-
-```bash
-git clone https://github.com/your-username/text-to-multimedia.git
-cd text-to-multimedia
-```
-
-### 2. `.env` ファイルの作成
-
-以下のようなAPIキーを設定：
-
-```
-OPENAI_API_KEY=your_openai_key
-AWS_ACCESS_KEY_ID=your_aws_access_key
-AWS_SECRET_ACCESS_KEY=your_aws_secret_key
-```
-
-### 3. 必要ライブラリのインストール
-
-```bash
-npm install
-```
-
-### 4. アプリケーションの起動
-
-```bash
-npm run dev
-```
 ---
 
 ## チームメンバー
