@@ -160,24 +160,19 @@ MuseMakerは、テキスト入力をもとに**画像・音楽・音楽付き静
 
 1. ユーザーが**日本語テキスト**をフロントエンドで入力
 2. Google翻訳を使用して**英語テキストに変換** 
-3. フロントエンド → **API Gateway → Lambda(Start)** に送信  
-   - **Step Functions** の実行を開始し、**実行ARN（`executionArn`）** を返却（`202 Accepted`）  
-4. **Step Functions** がオーケストレーションし、**Lambda(Composer)** を実行（並列処理）：  
+3. フロントエンド → **API Gateway → Lambda(A)** に送信  
+   - **Step Functions** の実行を開始し、**実行ARN** を返却  
+4. **Step Functions** がオーケストレーションし、**Lambda(B)** を実行（並列処理）：  
    - **音楽生成（バックグラウンドスレッド）**  
      - **Replicate / Riffusion** を呼び出し音楽生成を開始  
-     - **ステータスをポーリング**し、**成功時に音声データ（WAV）を取得**  
+     - **ステータスをポーリング**し、**成功時に音楽ファイルを取得**  
    - **GIF生成**  
-     - `seed = sha256(prompt)` を用いて一貫性を確保  
-     - `NUM_FRAMES=10`, `FRAME_DURATION=400ms`, `512x512`, `cfgScale=8.0`  
      - 各フレームで **Amazon Bedrock / Amazon Titan Image Generator v2** を呼び出し画像を生成  
      - 生成フレームを結合して **GIF** を作成  
    - **合流 & マージ**  
-     - **FFmpeg** で **GIF + 音声** を結合し **ループ動画（MP4）** を生成  
-     - 生成した動画を **Amazon S3 にアップロード** → **`videoUrl`** を取得  
-5. フロントエンドは **実行ARN（`executionArn`）** を使って **API Gateway → Lambda(Status)** に状態確認  
-   - **RUNNING**：処理継続  
-   - **SUCCEEDED**：**`videoUrl`** を取得  
-   - **FAILED**：エラー内容を受領  
+     - **FFmpeg** で **GIF + 音楽** を結合し **ループ動画（MP4）** を生成  
+     - 生成した動画を **Amazon S3 にアップロード** → **`動画URL`** を取得  
+5. フロントエンドは **実行ARN** を使って **API Gateway → Lambda(C)** に状態確認   
 6. 受け取った **`videoUrl`** をブラウザで再生（ループ再生可）
 
 ---
