@@ -29,7 +29,7 @@ MuseMakerは、テキスト入力をもとに**画像・音楽・音楽付き静
 
 ## デモ
 
-👉 [https://your-app-url.com](https://your-app-url.com)
+👉 [https://sprightly-crepe-42302c.netlify.app/](https://sprightly-crepe-42302c.netlify.app/)
 
 以下はデモの一例です：
 
@@ -41,7 +41,7 @@ MuseMakerは、テキスト入力をもとに**画像・音楽・音楽付き静
 
 1. 上記リンクにアクセスします。
 2. テキストボックスに任意のプロンプト（例：「吠える犬」）を入力します。
-3. 「生成」ボタンをクリックすると、以下のような結果が表示されます：
+3. 「送信」ボタンをクリックすると、以下のような結果が表示されます：
    - 画像が表示される
    - 音楽が再生される
    - GIFが表示される
@@ -54,8 +54,8 @@ MuseMakerは、テキスト入力をもとに**画像・音楽・音楽付き静
 
 | 区分 | 技術スタック |
 |------|--------------|
-| Front End | HTML / CSS / JavaScript |
-| Back End | Python / FFmpeg |
+| Front End | HTML / CSS / JavaScript / Netlify |
+| Back End | Python / FFmpeg / Pillow |
 | AI Model | Amazon Titan Image Generator v2 / MusicGen |
 | Cloud Service | AWS / Replicate |
 | Other | VSCode / GitHub |
@@ -85,7 +85,7 @@ MuseMakerは、テキスト入力をもとに**画像・音楽・音楽付き静
 
 ## システムの流れ
 
-本システムは、入力されたテキストをもとに以下の4種類のメディアを生成します：
+本システムは、入力されたテキストをもとに以下の5種類のメディアを生成します：
 
 ### ① テキストから画像生成（text-to-image）
 
@@ -94,7 +94,7 @@ MuseMakerは、テキスト入力をもとに**画像・音楽・音楽付き静
 #### 処理の流れ：
 
 1. ユーザーが**日本語のテキスト**をフロントエンドで入力  
-2. Google翻訳を使って**英語に翻訳**  
+2. Google翻訳を使って**英語テキストに変換**  
 3. JSON形式でテキストをAPI Gateway経由で送信  
 4. Lambda関数が**Amazon Bedrock**に指示を送り、**AMAZON Titan Image Generator v2**を呼び出す  
 5. 生成された画像が**Amazon S3に保存**  
@@ -106,35 +106,79 @@ MuseMakerは、テキスト入力をもとに**画像・音楽・音楽付き静
 
 #### 処理の流れ：
 
-1. ユーザーが**日本語のテキスト**を入力  
+1. ユーザーが**日本語のテキスト**をフロントエンドで入力  
 2. Google翻訳を使用して**英語テキストに変換**  
-3. 翻訳されたテキストをAPI Gateway経由で送信  
+3. JSON形式でテキストをAPI Gateway経由で送信   
 4. Lambda関数が**Replicate API**経由で**MusicGenモデル**を呼び出し、生成処理を開始  
 5. Lambdaが発行された `prediction ID` を元にステータス確認 → 音楽生成が完了  
-6. 音楽データ（音声ファイル）を**Amazon S3に保存**  
-7. 音楽ファイルのURLをWebに返却し、再生  
+6. 音楽ファイルを**Amazon S3に保存**  
+7. 音楽ファイルのURLをフロントエンドに返却し、Web上で再生  
 
-仮
-### ③ テキストからGIF生成（text-to-gif）
+### ③ テキストから音楽付き静止画生成（text-to-image-with-music）
 
-#### 処理の流れ：
-
-1. ユーザーの入力テキストからキーワードを抽出（例：「踊る犬」）  
-2. 事前に準備したGIFテンプレート（アニメーション）とキーワードを組み合わせる  
-3. 画像フレームや字幕を編集してGIFを生成  
-4. GIFをS3にアップロードし、URLを返却してWeb上で表示  
-
-### ④ テキストからGIF＋音楽合成動画生成（text-to-video）
+![text-to-music flow](a719a73b-497f-4f32-be22-ece39ba36c90.png)
 
 #### 処理の流れ：
 
-1. 上記の③で生成したGIFと、②で生成した音楽ファイルを取得  
-2. Lambda関数がFFmpegを呼び出して、
-   - GIFを映像、
-   - 音楽をBGM
-   としてマージし、動画（MP4など）を生成  
-3. 完成した動画ファイルをS3に保存  
-4. 動画URLをフロントエンドへ返却し、ブラウザで再生
+1. ユーザーが**日本語テキスト**をフロントエンドで入力 
+2. Google翻訳を使用して**英語テキストに変換**  
+3. フロントエンドから**API Gateway → Lambda(A)** に送信  
+4. **Lambda(A)** が並行に処理：  
+   - **Replicate API / MusicGen** で音楽生成を開始し、`prediction ID` を取得  
+   - **Amazon Bedrock / Titan Image Generator v2** で静止画像を生成 → **Amazon S3** に保存 → **画像URL** を取得  
+   - フロントエンドへ **`画像URL`** と **`prediction_id`** を返却  
+5. フロントエンドは定期的に **API Gateway → Lambda(B)** に **`prediction_id` と `画像URL`** を送信し、音楽生成の進行状況を確認  
+6. **Lambda(B)** が **Replicate API** でステータス確認 → 完了時に音楽ファイルを取得 → **S3 に保存** → **音楽URL** を取得  
+7. **Lambda(B)** が **Step Functions** を起動（入力：`画像URL`, `音楽URL`）  
+8. **Step Functions → Lambda(C)**：S3から画像と音声をダウンロードし、**FFmpeg** で**静止画像＋音声のMP4動画**を生成 → **S3 にアップロード** → **動画URL** を返却  
+9. フロントエンドは **API Gateway → Lambda(D)** に **実行ARN** を渡してそれを元にステータス確認 → **動画URL** を受け取る  
+10. 返却された **動画URL** をブラウザで再生  
+
+
+### ④ テキストからGIF生成（text-to-gif）
+
+![text-to-music flow](a719a73b-497f-4f32-be22-ece39ba36c90.png)
+
+#### 処理の流れ：
+
+1. ユーザーが**日本語テキスト**をフロントエンドで入力 
+2. Google翻訳を使用して**英語テキストに変換** 
+3. フロントエンド → **API Gateway → Lambda(A)** に送信  
+   - **Step Functions の実行を開始**し、**実行ARN** を返却  
+4. **Step Functions** がオーケストレーションし、**Lambda(B)** を実行：  
+   - 各フレームで **Amazon Bedrock / Amazon Titan Image Generator v2** を呼び出し  
+   - 生成画像を結合して **GIF を作成**（Pillow使用）  
+   - **S3 にアップロード**し **GIFURL** を返す  
+5. フロントエンドは **実行ARN** を使って **API Gateway → Lambda(C)** へ状態確認  
+6. 受け取った **GIFURL** をブラウザで表示
+
+### ⑤ テキストからループ動画生成（text-to-video）
+
+![text-to-music flow](a719a73b-497f-4f32-be22-ece39ba36c90.png)
+
+#### 処理の流れ：
+
+1. ユーザーが**日本語テキスト**をフロントエンドで入力
+2. Google翻訳を使用して**英語テキストに変換** 
+3. フロントエンド → **API Gateway → Lambda(Start)** に送信  
+   - **Step Functions** の実行を開始し、**実行ARN（`executionArn`）** を返却（`202 Accepted`）  
+4. **Step Functions** がオーケストレーションし、**Lambda(Composer)** を実行（並列処理）：  
+   - **音楽生成（バックグラウンドスレッド）**  
+     - **Replicate / Riffusion** を呼び出し音楽生成を開始  
+     - **ステータスをポーリング**し、**成功時に音声データ（WAV）を取得**  
+   - **GIF生成**  
+     - `seed = sha256(prompt)` を用いて一貫性を確保  
+     - `NUM_FRAMES=10`, `FRAME_DURATION=400ms`, `512x512`, `cfgScale=8.0`  
+     - 各フレームで **Amazon Bedrock / Amazon Titan Image Generator v2** を呼び出し画像を生成  
+     - 生成フレームを結合して **GIF** を作成  
+   - **合流 & マージ**  
+     - **FFmpeg** で **GIF + 音声** を結合し **ループ動画（MP4）** を生成  
+     - 生成した動画を **Amazon S3 にアップロード** → **`videoUrl`** を取得  
+5. フロントエンドは **実行ARN（`executionArn`）** を使って **API Gateway → Lambda(Status)** に状態確認  
+   - **RUNNING**：処理継続  
+   - **SUCCEEDED**：**`videoUrl`** を取得  
+   - **FAILED**：エラー内容を受領  
+6. 受け取った **`videoUrl`** をブラウザで再生（ループ再生可）
 
 ---
 
