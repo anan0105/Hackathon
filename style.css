@@ -55,6 +55,20 @@ body {
     background-color: #007bff;
 }
 
+/* ▼▼▼ 前回追加したスタイルを削除 ▼▼▼ */
+/*
+#home-btn {
+    margin-top: auto; 
+    background-color: #6c757d; 
+    border-top: 1px solid #999; 
+    margin-bottom: 1rem; 
+}
+#home-btn:hover {
+    background-color: #5a6268; 
+}
+*/
+/* ▲▲▲ ここまで ▲▲▲ */
+
 
 /* --- ハンバーガーメニューボタン --- */
 #sidebar-toggle-btn {
@@ -83,7 +97,7 @@ body {
     border-radius: 2px;
 }
 
-
+/* ▼▼▼ home-btnの新しいスタイルを追加 ▼▼▼ */
 #home-btn {
     position: fixed;
     top: 15px;
@@ -106,7 +120,7 @@ body {
 #home-btn:hover {
     background-color: #4e6a85; /* ホバー時の色を少し変える */
 }
-
+/* ▲▲▲ ここまで ▲▲▲ */
 
 
 /* --- メインコンテンツ --- */

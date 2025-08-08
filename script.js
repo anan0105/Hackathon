@@ -1,17 +1,21 @@
-// ご自身のAPI GatewayのURLに書き換えてください
+// ★★★ ご自身のAPI GatewayのURLに書き換えてください ★★★
 const API_BASE_URL = 'https://d7f37136t4.execute-api.us-east-1.amazonaws.com/prod_3'; // 例
-
+// const API_BASE_URL_2 = 'https://sedz5q6dj8.execute-api.us-east-1.amazonaws.com/Gif_1'
 
 // 各機能のエンドポイントURLを設定
 const API_ENDPOINTS = {
     image: `${API_BASE_URL}/generate-image`,
-    gif_start: `${API_BASE_URL}/start-gif-generate`,   
-    gif_status: `${API_BASE_URL}/check-gif-status`,    
+    gif_start: `${API_BASE_URL}/start-gif-generate`,   // 変更
+    gif_status: `${API_BASE_URL}/check-gif-status`,    // 追加
     music_start: `${API_BASE_URL}/start-music-generation`,
     music_status: `${API_BASE_URL}/check-music-status`,
     video_start: `${API_BASE_URL}/start-video-generation`,
     music_composition_check: `${API_BASE_URL}/check-music-and-start-composition`,
-    video_status: `${API_BASE_URL}/check-composition-status`
+    video_status: `${API_BASE_URL}/check-composition-status`, 
+        // ▼▼▼ ループ動画用のエンドポイントを追加 ▼▼▼
+    loop_video_start: `${API_BASE_URL}/start-loop-video-generation`,
+    loop_video_status: `${API_BASE_URL}/check-loop-video-status`,
+    // ▲▲▲ ここまで ▲▲▲
 };
 
 let currentRoom = 'image';
@@ -22,7 +26,10 @@ const chatHistories = {
     image: '<p class="system-message">静止画生成ルームへようこそ！</p>', // 文言を修正
     gif: '<p class="system-message">GIF画像生成ルームへようこそ！</p>', // ▼▼▼ GIF用の履歴を追加 ▼▼▼
     music: '<p class="system-message">音楽生成ルームへようこそ！</p>',
-    video: '<p class="system-message">動画生成ルームへようこそ！</p>'
+    video: '<p class="system-message">動画生成ルームへようこそ！</p>', 
+    // ▼▼▼ ループ動画用の履歴を追加 ▼▼▼
+    loop_video: '<p class="system-message">ループ動画生成ルームへようこそ！</p>',
+    // ▲▲▲ ここまで ▲▲▲
 };
 
 
@@ -60,7 +67,6 @@ navButtons.forEach(button => {
         button.classList.add('active');
         if (pollingInterval) clearInterval(pollingInterval);
 
-
         if (currentRoom === 'image') {
             roomTitle.textContent = 'AI Image Generator';
             promptInput.placeholder = '作りたい画像の日本語プロンプトを入力';
@@ -70,11 +76,15 @@ navButtons.forEach(button => {
         } else if (currentRoom === 'music') {
             roomTitle.textContent = 'AI Music Generator';
             promptInput.placeholder = '作りたい音楽の日本語プロンプトを入力';
-        } else {
+        } else if (currentRoom === 'video') {
             roomTitle.textContent = 'AI Video Generator';
             promptInput.placeholder = '作りたい動画の日本語プロンプトを入力';
+        // ▼▼▼ ループ動画ルームのUI設定を追加 ▼▼▼
+        } else if (currentRoom === 'loop_video') {
+            roomTitle.textContent = 'AI Loop Video Generator';
+            promptInput.placeholder = '作りたいループ動画の日本語プロンプトを入力';
         }
-
+        // ▲▲▲ ここまで ▲▲▲
         
         chatHistoryDiv.scrollTop = chatHistoryDiv.scrollHeight;
     });
@@ -106,7 +116,6 @@ sendBtn.addEventListener('click', async () => {
         addSystemMessage(`翻訳結果: ${englishPrompt}`);
         console.log(`Translated to English: ${englishPrompt}`);
 
-
         if (currentRoom === 'image') {
             await handleImageGeneration(englishPrompt);
         } else if (currentRoom === 'gif') {
@@ -115,8 +124,11 @@ sendBtn.addEventListener('click', async () => {
             await handleMusicGeneration(englishPrompt);
         } else if (currentRoom === 'video') { 
             await handleVideoGeneration(englishPrompt);
+        // ▼▼▼ ループ動画ルームの呼び出し処理を追加 ▼▼▼
+        } else if (currentRoom === 'loop_video') {
+            await handleLoopVideoGeneration(englishPrompt);
         }
-
+        // ▲▲▲ ここまで ▲▲▲
 
     } catch (error) {
         addErrorMessage(error.message);
@@ -194,7 +206,7 @@ async function handleGifGeneration(prompt) {
 
         pollingInterval = setInterval(async () => {
             try {
-
+                // ▼▼▼ fetchの引数を変更 ▼▼▼
                 const statusResponse = await fetch(API_ENDPOINTS.gif_status, {
                     method: 'POST',
                     headers: {
@@ -202,7 +214,7 @@ async function handleGifGeneration(prompt) {
                     },
                     body: JSON.stringify({ executionArn: executionArn })
                 });
-
+                // ▲▲▲ ここまで ▲▲▲
 
                 // 以降の処理は同じ
                 if (statusResponse.status === 403) throw new Error('認証エラー(403)が発生しました。APIの認証設定を確認してください。');
@@ -241,6 +253,68 @@ async function handleGifGeneration(prompt) {
         sendBtn.disabled = false;
     }
 }
+
+// ▼▼▼ ループ動画生成処理を新しく追加 ▼▼▼
+async function handleLoopVideoGeneration(prompt) {
+    try {
+        addSystemMessage("ループ動画生成ワークフローを開始します...");
+        const startResponse = await fetch(API_ENDPOINTS.loop_video_start, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ prompt: prompt }),
+        });
+        if (!startResponse.ok) throw new Error(`ワークフローの開始に失敗: ${await startResponse.text()}`);
+        
+        const startData = await startResponse.json();
+        const responseBody = JSON.parse(startData.body);
+        const executionArn = responseBody.executionArn;
+
+        if (!executionArn) throw new Error('実行IDの取得に失敗しました。');
+        addSystemMessage(`実行ID: ${executionArn.split(':').pop()} で生成中です...`);
+
+        pollingInterval = setInterval(async () => {
+            try {
+                const statusResponse = await fetch(API_ENDPOINTS.loop_video_status, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ executionArn: executionArn })
+                });
+
+                if (!statusResponse.ok) {
+                    const errorText = await statusResponse.text();
+                    throw new Error(`ステータスの確認に失敗しました: ${statusResponse.status} ${errorText}`);
+                }
+
+                const statusGif = await statusResponse.json();
+                const statusData = JSON.parse(statusGif.body);
+
+                if (statusData.status === 'SUCCEEDED') {
+                    clearInterval(pollingInterval);
+                    addSystemMessage("ループ動画生成が完了しました！");
+                    const finalOutput = typeof statusData.output === 'string' ? JSON.parse(statusData.output) : statusData.output;
+                    // 結果は動画なので、addVideoMessage を使用
+                    addVideoMessage(finalOutput.videoUrl);
+                    loadingDiv.classList.add('hidden');
+                    sendBtn.disabled = false;
+                } else if (statusData.status === 'FAILED') {
+                    clearInterval(pollingInterval);
+                    throw new Error(`生成に失敗しました: ${statusData.output}`);
+                }
+            } catch (error) {
+                clearInterval(pollingInterval);
+                addErrorMessage(error.message);
+                loadingDiv.classList.add('hidden');
+                sendBtn.disabled = false;
+            }
+        }, 5000);
+
+    } catch (error) {
+        addErrorMessage(error.message);
+        loadingDiv.classList.add('hidden');
+        sendBtn.disabled = false;
+    }
+}
+
 
 
 
