@@ -1,21 +1,21 @@
 // ★★★ ご自身のAPI GatewayのURLに書き換えてください ★★★
 const API_BASE_URL = 'https://d7f37136t4.execute-api.us-east-1.amazonaws.com/prod_3'; // 例
-// const API_BASE_URL_2 = 'https://sedz5q6dj8.execute-api.us-east-1.amazonaws.com/Gif_1'
+
 
 // 各機能のエンドポイントURLを設定
 const API_ENDPOINTS = {
     image: `${API_BASE_URL}/generate-image`,
-    gif_start: `${API_BASE_URL}/start-gif-generate`,   // 変更
-    gif_status: `${API_BASE_URL}/check-gif-status`,    // 追加
+    gif_start: `${API_BASE_URL}/start-gif-generate`,   
+    gif_status: `${API_BASE_URL}/check-gif-status`,    
     music_start: `${API_BASE_URL}/start-music-generation`,
     music_status: `${API_BASE_URL}/check-music-status`,
     video_start: `${API_BASE_URL}/start-video-generation`,
     music_composition_check: `${API_BASE_URL}/check-music-and-start-composition`,
     video_status: `${API_BASE_URL}/check-composition-status`, 
-        // ▼▼▼ ループ動画用のエンドポイントを追加 ▼▼▼
+
     loop_video_start: `${API_BASE_URL}/start-loop-video-generation`,
     loop_video_status: `${API_BASE_URL}/check-loop-video-status`,
-    // ▲▲▲ ここまで ▲▲▲
+
 };
 
 let currentRoom = 'image';
@@ -27,9 +27,9 @@ const chatHistories = {
     gif: '<p class="system-message">GIF画像生成ルームへようこそ！</p>', // ▼▼▼ GIF用の履歴を追加 ▼▼▼
     music: '<p class="system-message">音楽生成ルームへようこそ！</p>',
     video: '<p class="system-message">動画生成ルームへようこそ！</p>', 
-    // ▼▼▼ ループ動画用の履歴を追加 ▼▼▼
+
     loop_video: '<p class="system-message">ループ動画生成ルームへようこそ！</p>',
-    // ▲▲▲ ここまで ▲▲▲
+
 };
 
 
@@ -79,13 +79,12 @@ navButtons.forEach(button => {
         } else if (currentRoom === 'video') {
             roomTitle.textContent = 'AI Video Generator';
             promptInput.placeholder = '作りたい動画の日本語プロンプトを入力';
-        // ▼▼▼ ループ動画ルームのUI設定を追加 ▼▼▼
+
         } else if (currentRoom === 'loop_video') {
             roomTitle.textContent = 'AI Loop Video Generator';
             promptInput.placeholder = '作りたいループ動画の日本語プロンプトを入力';
         }
-        // ▲▲▲ ここまで ▲▲▲
-        
+
         chatHistoryDiv.scrollTop = chatHistoryDiv.scrollHeight;
     });
 });
@@ -140,7 +139,15 @@ sendBtn.addEventListener('click', async () => {
 // 再生ボタンの処理
 playBtn.addEventListener('click', () => {
     if (currentAudio) {
-        currentAudio.play();
+        // もし現在、音声または動画が一時停止中なら再生する
+        if (currentAudio.paused) {
+            currentAudio.play();
+            playBtn.textContent = '停止';
+        } else {
+            // 再生中なら一時停止する
+            currentAudio.pause();
+            playBtn.textContent = '再生';
+        }
     }
 });
 
@@ -206,7 +213,7 @@ async function handleGifGeneration(prompt) {
 
         pollingInterval = setInterval(async () => {
             try {
-                // ▼▼▼ fetchの引数を変更 ▼▼▼
+
                 const statusResponse = await fetch(API_ENDPOINTS.gif_status, {
                     method: 'POST',
                     headers: {
@@ -214,7 +221,7 @@ async function handleGifGeneration(prompt) {
                     },
                     body: JSON.stringify({ executionArn: executionArn })
                 });
-                // ▲▲▲ ここまで ▲▲▲
+
 
                 // 以降の処理は同じ
                 if (statusResponse.status === 403) throw new Error('認証エラー(403)が発生しました。APIの認証設定を確認してください。');
@@ -254,7 +261,7 @@ async function handleGifGeneration(prompt) {
     }
 }
 
-// ▼▼▼ ループ動画生成処理を新しく追加 ▼▼▼
+
 async function handleLoopVideoGeneration(prompt) {
     try {
         addSystemMessage("ループ動画生成ワークフローを開始します...");
@@ -481,21 +488,86 @@ function addUserMessage(text) {
     chatHistoryDiv.appendChild(userMessage);
 }
 
-function addImageMessage(url) {
-    const imageContainer = document.createElement('div');
-    imageContainer.classList.add('image-container');
+
+
+function addImageMessage(url, fileName = 'generated.png') {
+    const container = document.createElement('div');
+    container.classList.add('image-container'); // コンテナクラスは共通に
+    
     const img = document.createElement('img');
     img.src = url;
-    imageContainer.appendChild(img);
-    chatHistoryDiv.appendChild(imageContainer);
+    container.appendChild(img);
+
+    // ダウンロードボタンを追加
+    const downloadBtn = createDownloadButton(url, fileName);
+    container.appendChild(downloadBtn);
+
+    chatHistoryDiv.appendChild(container);
+    chatHistoryDiv.scrollTop = chatHistoryDiv.scrollHeight;
 }
 
+function addAudioMessage(url, fileName = 'generated.mp3') {
+    const container = document.createElement('div');
+    container.classList.add('audio-container'); // コンテナクラスは共通に
+    
+    const audio = document.createElement('audio');
+    audio.controls = true; 
+    audio.preload = 'auto';
+    audio.src = url;
+    container.appendChild(audio);
+
+    // ダウンロードボタンを追加
+    const downloadBtn = createDownloadButton(url, fileName);
+    container.appendChild(downloadBtn);
+    
+    currentAudio = audio;
+    playBtn.disabled = false; // 再生ボタンを有効化
+    
+    chatHistoryDiv.appendChild(container);
+    chatHistoryDiv.scrollTop = chatHistoryDiv.scrollHeight;
+}
+
+// script.js
+
+function addVideoMessage(url, fileName = 'generated.mp4') {
+    const container = document.createElement('div');
+    container.classList.add('video-container');
+    
+    const video = document.createElement('video');
+
+    video.preload = 'auto';
+    video.src = url;
+    video.playsInline = true;
+
+    // もし現在のルームが「ループ動画」の場合、特別な属性を追加
+    if (currentRoom === 'loop_video') {
+        video.loop = true;
+        video.autoplay = true;
+        video.muted = true;
+        video.controls = false; // ← コントロールバーを非表示に
+        playBtn.textContent = '停止'; // ← ボタンのテキストを初期設定
+    } else {
+        video.controls = true; // ← ループ動画以外では表示
+    }
+
+    container.appendChild(video);
+
+    const downloadBtn = createDownloadButton(url, fileName);
+    container.appendChild(downloadBtn);
+
+    currentAudio = video; 
+    playBtn.disabled = false;
+
+    chatHistoryDiv.appendChild(container);
+    chatHistoryDiv.scrollTop = chatHistoryDiv.scrollHeight;
+}
 
 function addErrorMessage(text) {
     const errorMessage = document.createElement('p');
     errorMessage.classList.add('error-message');
     errorMessage.textContent = `エラーが発生しました: ${text}`;
     chatHistoryDiv.appendChild(errorMessage);
+    chatHistoryDiv.scrollTop = chatHistoryDiv.scrollHeight;
 }
 
 function addSystemMessage(text) {
@@ -503,34 +575,56 @@ function addSystemMessage(text) {
     systemMessage.classList.add('system-message');
     systemMessage.textContent = text;
     chatHistoryDiv.appendChild(systemMessage);
+    chatHistoryDiv.scrollTop = chatHistoryDiv.scrollHeight;
 }
 
-function addAudioMessage(url) {
-    const audioContainer = document.createElement('div');
-    audioContainer.classList.add('audio-container');
-    const audio = document.createElement('audio');
-    audio.controls = true; 
-    audio.preload = 'auto';
-    audio.src = url;
-    currentAudio = audio;
-    playBtn.disabled = false;
-    audioContainer.appendChild(audio);
-    chatHistoryDiv.appendChild(audioContainer);
+
+
+// ダウンロードボタンを作成する共通関数
+function createDownloadButton(url, fileName) {
+    const button = document.createElement('button');
+    button.classList.add('download-btn');
+    button.textContent = '⬇️'; // ダウンロードアイコン
+    button.title = 'ダウンロード';
+    button.onclick = () => handleDownload(url, fileName);
+    return button;
 }
 
-function addVideoMessage(url) {
-    const container = document.createElement('div');
-    container.classList.add('video-container');
-    const video = document.createElement('video');
-    video.controls = true;
-    video.preload = 'auto';
-    video.src = url;
-    video.playsInline = true;
-    currentAudio = video; 
-    playBtn.disabled = false;
-    container.appendChild(video);
-    chatHistoryDiv.appendChild(container);
+// ファイルをダウンロードする関数
+async function handleDownload(url, fileName) {
+    try {
+        // fetchを使用してファイルをBlobとして取得
+        const response = await fetch(url);
+        if (!response.ok) {
+            throw new Error('ファイルの取得に失敗しました。');
+        }
+        const blob = await response.blob();
+
+        // Blobからダウンロード用のURLを生成
+        const blobUrl = window.URL.createObjectURL(blob);
+
+        // aタグを生成してダウンロードを実行
+        const a = document.createElement('a');
+        a.style.display = 'none';
+        a.href = blobUrl;
+        a.download = fileName; // ファイル名を指定
+        document.body.appendChild(a);
+        a.click();
+
+        // 後片付け
+        window.URL.revokeObjectURL(blobUrl);
+        document.body.removeChild(a);
+
+    } catch (error) {
+        console.error('ダウンロードエラー:', error);
+        // CORSエラーなどでfetchが失敗した場合のフォールバック
+        // 新しいタブでURLを開くだけにする
+        window.open(url, '_blank');
+        addErrorMessage('ダウンロードに失敗しました。ファイルは新しいタブで開きます。CORS設定を確認してください。');
+    }
 }
+
+
 
 window.addEventListener('load', () => {
     const params = new URLSearchParams(window.location.search);

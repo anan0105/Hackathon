@@ -25,7 +25,7 @@ body {
     display: flex;
     flex-direction: column;
     gap: 10px;
-    width: 220px; /* 幅を広くする */
+    width: 250px; /* 幅を広くする */
     position: fixed;
     top: 0;
     left: 0;
@@ -55,19 +55,7 @@ body {
     background-color: #007bff;
 }
 
-/* ▼▼▼ 前回追加したスタイルを削除 ▼▼▼ */
-/*
-#home-btn {
-    margin-top: auto; 
-    background-color: #6c757d; 
-    border-top: 1px solid #999; 
-    margin-bottom: 1rem; 
-}
-#home-btn:hover {
-    background-color: #5a6268; 
-}
-*/
-/* ▲▲▲ ここまで ▲▲▲ */
+
 
 
 /* --- ハンバーガーメニューボタン --- */
@@ -97,7 +85,7 @@ body {
     border-radius: 2px;
 }
 
-/* ▼▼▼ home-btnの新しいスタイルを追加 ▼▼▼ */
+
 #home-btn {
     position: fixed;
     top: 15px;
@@ -120,7 +108,7 @@ body {
 #home-btn:hover {
     background-color: #4e6a85; /* ホバー時の色を少し変える */
 }
-/* ▲▲▲ ここまで ▲▲▲ */
+
 
 
 /* --- メインコンテンツ --- */
@@ -136,7 +124,7 @@ body {
 
 /* サイドバーが開いているときにメインコンテンツを少し右にずらす */
 #sidebar.open ~ .container {
-    margin-left: 220px;
+    margin-left: 270px;
 }
 
 
@@ -202,6 +190,31 @@ h1 {
     font-size: 20px;
     align-self: center;
 }
+
+
+.download-btn {
+    position: absolute;
+    top: 10px;
+    right: 10px;
+    width: 50px;
+    height: 50px;
+    background-color: rgba(0, 0, 0, 0.5);
+    color: white;
+    border: none;
+    border-radius: 60%;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 16px;
+    transition: background-color 0.2s;
+    opacity: 0.7;
+}
+.download-btn:hover {
+    background-color: rgba(0, 0, 0, 0.8);
+    opacity: 1;
+}
+
 
 /* --- 入力エリア --- */
 .input-area {
