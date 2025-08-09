@@ -66,11 +66,28 @@ MuseMakerは、テキスト入力をもとに**画像・音楽・音楽付き静
 
 ### 🔹 AWSサービス構成
 
-- **API Gateway**: フロントエンドからのHTTPリクエストを受け取り、バックエンド（Lambda）にルーティング。
-- **AWS Lambda**: 各生成処理を非同期で実行（画像生成、音楽生成、GIF作成、動画合成など）
-- **Step Functions**: GIF＋音楽の合成やメディアの順序処理など、複数Lambda関数のワークフローを管理。
-- **Amazon S3**: 生成された画像・音楽・動画を保存し、Webでのアクセスを可能に。
-- **Amazon Bedrock**: Titan Image Generator v2を提供する生成AIプラットフォーム。
+- ### API Gateway
+   -<img src="img/Gateway.png" width="10%">
+
+   -フロントエンドからのHTTPリクエストを受け取り、バックエンド（Lambda）にルーティング。
+- ### Step Lambda
+   -<img src="img/Lambda.png" width="10%">
+
+   -各生成処理を非同期で実行（画像生成、音楽生成、GIF作成、動画合成など）  
+  
+- ### Step Functions
+   -<img src="img/Step_Functions.png" width="10%">
+
+   -IF＋音楽の合成やメディアの順序処理など、複数Lambda関数のワークフローを管理。
+- ### Amazon S3
+   <img src="img/S3.png" width="10%">
+  
+   - 生成された画像・音楽・動画を保存し、Webでのアクセスを可能に。
+
+- ### Amazon Bedrock
+   <img src="img/Bedrock.png" width="10%">
+
+   - Titan Image Generator v2を提供する生成AIプラットフォーム。
 
 ### 🔹 Replicate
 さまざまな生成AIモデルをAPI経由で簡単に利用できるサービス。MusicGenをはじめとするAIモデルをノーコードで呼び出し可能。認証トークンとエンドポイントURLを使ってAPI操作。
