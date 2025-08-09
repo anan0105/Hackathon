@@ -89,7 +89,7 @@ MuseMakerは、テキスト入力をもとに**画像・音楽・音楽付き静
 
 ### ① テキストから画像生成（text-to-image）
 
-![text-to-image flow](b3390c84-ac01-4c25-a1aa-2c0a0ebd89d1.png)
+![text-to-image flow](./img/image.png)
 
 #### 処理の流れ：
 
@@ -102,7 +102,7 @@ MuseMakerは、テキスト入力をもとに**画像・音楽・音楽付き静
 
 ### ② テキストから音楽生成（text-to-music）
 
-![text-to-music flow](a719a73b-497f-4f32-be22-ece39ba36c90.png)
+![text-to-music flow](./img/music.png)
 
 #### 処理の流れ：
 
@@ -116,7 +116,7 @@ MuseMakerは、テキスト入力をもとに**画像・音楽・音楽付き静
 
 ### ③ テキストから音楽付き静止画生成（text-to-image-with-music）
 
-![text-to-music flow](a719a73b-497f-4f32-be22-ece39ba36c90.png)
+![text-to-music flow](./img/image-music.png)
 
 #### 処理の流れ：
 
@@ -137,7 +137,7 @@ MuseMakerは、テキスト入力をもとに**画像・音楽・音楽付き静
 
 ### ④ テキストからGIF生成（text-to-gif）
 
-![text-to-music flow](a719a73b-497f-4f32-be22-ece39ba36c90.png)
+![text-to-music flow](./img/gif.png)
 
 #### 処理の流れ：
 
@@ -154,7 +154,7 @@ MuseMakerは、テキスト入力をもとに**画像・音楽・音楽付き静
 
 ### ⑤ テキストからループ動画生成（text-to-video）
 
-![text-to-music flow](a719a73b-497f-4f32-be22-ece39ba36c90.png)
+![text-to-music flow](./img/loop.png)
 
 #### 処理の流れ：
 
