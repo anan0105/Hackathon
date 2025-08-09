@@ -44,8 +44,9 @@ MuseMakerは、テキスト入力をもとに**画像・音楽・音楽付き静
 3. 「送信」ボタンをクリックすると、以下のような結果が表示されます：
    - 画像が表示される
    - 音楽が再生される
-   - GIFが表示される
-   - GIF＋音楽を合成した動画が再生される
+   - 音楽付き静止画が表示される
+   - GIFが再生される
+   - GIF＋音楽を合成したループ動画が再生される
 4. 必要に応じて、生成されたメディアをダウンロードすることもできます。
 
 ---
@@ -67,18 +68,17 @@ MuseMakerは、テキスト入力をもとに**画像・音楽・音楽付き静
 ### 🔹 AWSサービス構成
 
 - ### API Gateway
-   -<img src="img/Gateway.png" width="10%">
+   <img src="img/Gateway.png" width="10%">
 
-   -フロントエンドからのHTTPリクエストを受け取り、バックエンド（Lambda）にルーティング。
+   - フロントエンドからのHTTPリクエストを受け取り、バックエンド（Lambda）にルーティング。
 - ### Step Lambda
-   -<img src="img/Lambda.png" width="10%">
-
-   -各生成処理を非同期で実行（画像生成、音楽生成、GIF作成、動画合成など）  
+   <img src="img/Lambda.png" width="10%">
   
+   - 各生成処理を非同期で実行（画像生成、音楽生成、GIF作成、動画合成など） 
 - ### Step Functions
-   -<img src="img/Step_Functions.png" width="10%">
+   <img src="img/Step_Functions.png" width="10%">
 
-   -IF＋音楽の合成やメディアの順序処理など、複数Lambda関数のワークフローを管理。
+   - GIF＋音楽の合成やメディアの順序処理など、複数Lambda関数のワークフローを管理。
 - ### Amazon S3
    <img src="img/S3.png" width="10%">
   
@@ -190,7 +190,7 @@ MuseMakerは、テキスト入力をもとに**画像・音楽・音楽付き静
      - **FFmpeg** で **GIF + 音楽** を結合し **ループ動画（MP4）** を生成  
      - 生成した動画を **Amazon S3 にアップロード** → **`動画URL`** を取得  
 5. フロントエンドは **実行ARN** を使って **API Gateway → Lambda(C)** に状態確認   
-6. 受け取った **`videoUrl`** をブラウザで再生（ループ再生可）
+6. 受け取った **動画URL** をブラウザで再生（ループ再生可）
 
 ---
 
