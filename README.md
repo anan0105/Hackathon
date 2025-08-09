@@ -1,14 +1,19 @@
-<img src="img/画像.png" width="100%">
+<img src="img/theme.png" width="100%">
 
 <br>
 <p align="center">
-<img src="https://img.shields.io/badge/-HTML5-333.svg?logo=html5&style=flat" />  
-<img src="https://img.shields.io/badge/-CSS3-1572B6.svg?logo=css3&style=flat" />
+<img src="https://img.shields.io/badge/-HTML-333.svg?logo=html5&style=flat" />  
+<img src="https://img.shields.io/badge/-CSS-1572B6.svg?logo=css3&style=flat" />
 <img src="https://img.shields.io/badge/Javascript-276DC3.svg?logo=javascript&style=flat" />
 <img src="https://img.shields.io/badge/-Python-F9DC3E.svg?logo=python&style=flat" />
 <img src="https://img.shields.io/badge/-Amazon%20AWS-232F3E.svg?logo=amazon-aws&style=flat" />
 <img src="https://img.shields.io/badge/-GitHub-181717.svg?logo=github&style=flat" />
-<img src="https://img.shields.io/badge/GitHub-VSCode-181717.svg?logo=github&logoColor=white" />
+<img src="https://img.shields.io/badge/-Replicate-red?style=flat&logo=Replicate" />
+<img src="https://img.shields.io/badge/-FFmpeg-%23007808?style=flat&logo=FFmpeg" />
+<img src="https://img.shields.io/badge/-Vscode-blue?style=flat&logo=bule" />
+
+
+
 
 </p>
 
