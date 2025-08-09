@@ -1,4 +1,17 @@
-# MuseMaker
+<img src="img/画像.png" width="100%">
+
+<br>
+<p align="center">
+<img src="https://img.shields.io/badge/-HTML5-333.svg?logo=html5&style=flat" />  
+<img src="https://img.shields.io/badge/-CSS3-1572B6.svg?logo=css3&style=flat" />
+<img src="https://img.shields.io/badge/Javascript-276DC3.svg?logo=javascript&style=flat" />
+<img src="https://img.shields.io/badge/-Python-F9DC3E.svg?logo=python&style=flat" />
+<img src="https://img.shields.io/badge/-Amazon%20AWS-232F3E.svg?logo=amazon-aws&style=flat" />
+<img src="https://img.shields.io/badge/-GitHub-181717.svg?logo=github&style=flat" />
+<img src="https://img.shields.io/badge/GitHub-VSCode-181717.svg?logo=github&logoColor=white" />
+
+</p>
+
 
 ## アプリの概要
 MuseMakerは、テキスト入力をもとに**画像・音楽・音楽付き静止画・GIF・ループ動画**を自動生成し、Web上で表示・再生できるアプリケーションです。
@@ -106,7 +119,7 @@ MuseMakerは、テキスト入力をもとに**画像・音楽・音楽付き静
 
 ### ① テキストから画像生成（text-to-image）
 
-![text-to-image flow](./img/image.png)
+![text-to-image flow](./img/image2.png)
 
 #### 処理の流れ：
 
@@ -119,7 +132,7 @@ MuseMakerは、テキスト入力をもとに**画像・音楽・音楽付き静
 
 ### ② テキストから音楽生成（text-to-music）
 
-![text-to-music flow](./img/music.png)
+![text-to-music flow](./img/music2.png)
 
 #### 処理の流れ：
 
@@ -133,7 +146,7 @@ MuseMakerは、テキスト入力をもとに**画像・音楽・音楽付き静
 
 ### ③ テキストから音楽付き静止画生成（text-to-image-with-music）
 
-![text-to-music flow](./img/image-music.png)
+![text-to-music flow](./img/image-music2.png)
 
 #### 処理の流れ：
 
@@ -154,7 +167,7 @@ MuseMakerは、テキスト入力をもとに**画像・音楽・音楽付き静
 
 ### ④ テキストからGIF生成（text-to-gif）
 
-![text-to-music flow](./img/gif.png)
+![text-to-music flow](./img/gif2.png)
 
 #### 処理の流れ：
 
@@ -171,7 +184,7 @@ MuseMakerは、テキスト入力をもとに**画像・音楽・音楽付き静
 
 ### ⑤ テキストからループ動画生成（text-to-video）
 
-![text-to-music flow](./img/loop.png)
+![text-to-music flow](./img/loop2.png)
 
 #### 処理の流れ：
 
