@@ -73,11 +73,11 @@ MuseMakerは、テキスト入力をもとに**画像・音楽・音楽付き静
 
 | 区分 | 技術スタック |
 |------|--------------|
-| Front End | HTML / CSS / JavaScript / Netlify |
+| Front End | HTML / CSS / JavaScript |
 | Back End | Python / FFmpeg / Pillow |
 | AI Model | Amazon Titan Image Generator v2 / Stable Diffusion <br> MusicGen / Riffusion |
 | Cloud Service | AWS / Replicate |
-| Other | VSCode / GitHub |
+| Other | VSCode / Netlify / GitHub |
 
 ---
 
@@ -115,6 +115,9 @@ MuseMakerは、テキスト入力をもとに**画像・音楽・音楽付き静
 
 ### 🔹 MusicGen / Riffusion
 音楽生成モデル。プロンプトから自然な音楽を数秒～数分単位で生成可能で、スタイル指定やジャンル制御にも対応。
+
+### 🔹 Netlify
+フロントエンドのホスティングサービス。GitHubリポジトリと連携し、プッシュ時に自動ビルド・自動デプロイを実行。グローバルCDNを通じて高速なコンテンツ配信を提供し、HTTPSも自動設定されるため運用負荷が低い。
 
 ---
 
