@@ -53,11 +53,6 @@ MuseMakerは、テキスト入力をもとに**画像・音楽・音楽付き静
 
 👉 [https://muse-maker-free.netlify.app/](https://muse-maker-free.netlify.app/)
 
-
-以下はデモの一例です：
-
-![demo](demo.gif)
-
 ---
 
 ## 利用方法
@@ -80,7 +75,7 @@ MuseMakerは、テキスト入力をもとに**画像・音楽・音楽付き静
 |------|--------------|
 | Front End | HTML / CSS / JavaScript / Netlify |
 | Back End | Python / FFmpeg / Pillow |
-| AI Model | Amazon Titan Image Generator v2 / MusicGen |
+| AI Model | Amazon Titan Image Generator v2 / Stable Diffusion <br> MusicGen / Riffusion |
 | Cloud Service | AWS / Replicate |
 | Other | VSCode / GitHub |
 
@@ -115,11 +110,11 @@ MuseMakerは、テキスト入力をもとに**画像・音楽・音楽付き静
 ### 🔹 Replicate
 さまざまな生成AIモデルをAPI経由で簡単に利用できるサービス。MusicGenをはじめとするAIモデルをノーコードで呼び出し可能。認証トークンとエンドポイントURLを使ってAPI操作。
 
-### 🔹 Amazon Titan Image Generator v2
+### 🔹 Amazon Titan Image Generator v2 / Stable Diffusion
 画像生成モデル。プロンプトに基づいてリアルで高解像度な画像を生成可能。
 
-### 🔹 MusicGen
-音楽生成モデル。プロンプトから自然な音楽を数秒～数分単位で生成可能で、スタイル指定やジャンル制御にも対応。Replicateを通じてAPI利用可能。
+### 🔹 MusicGen / Riffusion
+音楽生成モデル。プロンプトから自然な音楽を数秒～数分単位で生成可能で、スタイル指定やジャンル制御にも対応。
 
 ---
 
