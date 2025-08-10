@@ -47,7 +47,12 @@ MuseMakerは、テキスト入力をもとに**画像・音楽・音楽付き静
 
 ## デモ
 
-👉 [https://sprightly-crepe-42302c.netlify.app/](https://sprightly-crepe-42302c.netlify.app/)
+以下のリンクでは、本アプリの**簡易版デモ**をご利用いただけます。  
+※ 本システムは従量課金制のため、利用状況に応じて**開発者側に料金が発生**します。  
+　そのため、課金を抑える目的で一部機能を制限しています。
+
+👉 [https://muse-maker-free.netlify.app/](https://muse-maker-free.netlify.app/)
+
 
 以下はデモの一例です：
 
