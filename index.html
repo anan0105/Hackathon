@@ -3,43 +3,102 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>AI Generator</title>
-    <link rel="stylesheet" href="style.css">
+    <title>AI Generator - ようこそ</title>
+    <link rel="stylesheet" href="title.css">
 </head>
 <body>
-    <div class="app-layout">
-        
-        <button id="sidebar-toggle-btn">
-            <span></span>
-            <span></span>
-            <span></span>
-        </button>
+    <div class="title-container">
+        <img src="logo_2.png" alt="Muse Maker Logo" class="title-logo">
+        <h1>AI Generator</h1>
+        <p>どのツールを使いますか？</p>
+        <div class="room-selection">
+            <a href="chat.html?room=image" class="room-card">
+                <h2>🖼️ 静止画生成</h2>
+                <p>テキストから一枚の画像を生成します。</p>
+            </a>
+            <a href="chat.html?room=gif" class="room-card">
+                <h2>🎞️ GIF画像生成</h2>
+                <p>テキストからアニメーションGIFを生成します。</p>
+            </a>
+            <a href="chat.html?room=music" class="room-card">
+                <h2>🎵 音楽生成</h2>
+                <p>テキストから音楽を生成します。</p>
+            </a>
+            <a href="chat.html?room=video" class="room-card">
+                <h2>🎬 動画像生成</h2>
+                <p>画像と音楽を組み合わせて動画像を生成します。</p>
+            </a>
+            <a href="chat.html?room=loop_video" class="room-card">
+                <h2>🔁 ループ動画生成</h2>
+                <p>BGM付きのループ動画を生成します。</p>
+            </a>
+            <a href="chat.html?room=game" class="room-card">
+                <h2>🕹️ ミニゲーム</h2>
+                <p>生成の待ち時間に簡単なゲームで遊べます。</p>
+            </a>
+            </div>
+    </div>
+    
+        <div class="birth-animation-container" id="birth-animation-container">
+        <div class="light-particle"></div>
+        <img src="logo_mojinasi.png" alt="ロゴベース" class="logo-base">
+        <img src="logo_omeme_kaizoudo.png" alt="ロゴ完成版" class="logo-eye" id="logo-eye">
+        <img src="logo_wink.png" alt="ロゴウインク版" class="logo-wink" id="logo-wink">
 
-        <button id="home-btn">🏠</button>
-        <nav id="sidebar" class="hotbar">
-            <button class="nav-btn active" data-room="image">🖼️ 静止画生成</button>
-            <button class="nav-btn" data-room="gif">🎞️ GIF生成</button>
-            <button class="nav-btn" data-room="music">🎵 音楽生成</button>
-            <button class="nav-btn" data-room="video">🎬 動画生成</button>
-            <button class="nav-btn" data-room="loop_video">🔁 ループ動画生成</button>
-            </nav>
-
-        <div class="container">
-            <h1 id="room-title">AI Image Generator</h1>
-            <div id="chat-history">
-                <p class="system-message">画像生成ルームへようこそ！</p>
-            </div>
-            <div class="input-area">
-                <input type="text" id="prompt-input" placeholder="作りたいコンテンツの日本語プロンプトを入力">
-                <button id="send-btn">送信</button>
-                <button id="play-btn" disabled>再生</button>
-            </div>
-            <div id="loading" class="hidden">
-                <div class="spinner"></div>
-                <p>生成中です...</p>
-            </div>
+        <div class="speech-bubble" id="speech-bubble">
+             <p id="speech-text">トークルームを選択してね♪</p>
         </div>
     </div>
-    <script src="script.js"></script>
-</body>
+    <script>
+        // 必要な要素をIDで取得
+        const logoContainer = document.getElementById('birth-animation-container');
+        const logoEye = document.getElementById('logo-eye');
+        const logoWink = document.getElementById('logo-wink');
+        const speechText = document.getElementById('speech-text');
+
+        // ロゴの状態を管理する変数
+        let isWinking = false; // 現在ウインクしているか
+        let isCoolingDown = false; // クールダウン中か
+
+        const originalText = 'トークルームを選択してね♪';
+        const winkText = 'いろんな映像を作ってね♪';
+
+        // ★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★
+        // 6秒後（出現アニメーション完了後）にクラスを追加する処理
+        setTimeout(() => {
+            logoEye.classList.add('intro-finished');
+        }, 6000);
+        // ★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★
+
+        // ロゴコンテナがクリックされた時の処理
+        logoContainer.addEventListener('click', () => {
+            // クールダウン中は何もせずに処理を終了
+            if (isCoolingDown) {
+                return;
+            }
+
+            // isWinking の状態に応じて、表示を切り替える
+            if (isWinking) {
+                // ウインク状態から通常状態へ戻す
+                logoEye.style.display = 'block';
+                logoWink.style.display = 'none';
+                speechText.textContent = originalText;
+                isWinking = false;
+            } else {
+                // 通常状態からウインク状態へ変更
+                logoEye.style.display = 'none';
+                logoWink.style.display = 'block';
+                speechText.textContent = winkText;
+                isWinking = true;
+            }
+            
+            // クールダウンを開始
+            isCoolingDown = true;
+            // 5秒後（5000ミリ秒）にクールダウンを解除
+            setTimeout(() => {
+                isCoolingDown = false;
+            }, 1000);
+        });
+    </script>
+    </body>
 </html>

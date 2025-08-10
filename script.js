@@ -1,642 +1,584 @@
-// ★★★ ご自身のAPI GatewayのURLに書き換えてください ★★★
-const API_BASE_URL = 'https://d7f37136t4.execute-api.us-east-1.amazonaws.com/prod_3'; // 例
+window.addEventListener('load', () => {
 
+    // ★★★ ご自身のAPI GatewayのURLに書き換えてください ★★★
+    const API_BASE_URL = 'https://d7f37136t4.execute-api.us-east-1.amazonaws.com/prod_3'; // 例
 
-// 各機能のエンドポイントURLを設定
-const API_ENDPOINTS = {
-    image: `${API_BASE_URL}/generate-image`,
-    gif_start: `${API_BASE_URL}/start-gif-generate`,   
-    gif_status: `${API_BASE_URL}/check-gif-status`,    
-    music_start: `${API_BASE_URL}/start-music-generation`,
-    music_status: `${API_BASE_URL}/check-music-status`,
-    video_start: `${API_BASE_URL}/start-video-generation`,
-    music_composition_check: `${API_BASE_URL}/check-music-and-start-composition`,
-    video_status: `${API_BASE_URL}/check-composition-status`, 
+    const API_ENDPOINTS = {
+        image: `${API_BASE_URL}/generate-image`,
+        gif_start: `${API_BASE_URL}/start-gif-generate`,
+        gif_status: `${API_BASE_URL}/check-gif-status`,
+        music_start: `${API_BASE_URL}/start-music-generation`,
+        music_status: `${API_BASE_URL}/check-music-status`,
+        video_start: `${API_BASE_URL}/start-video-generation`,
+        music_composition_check: `${API_BASE_URL}/check-music-and-start-composition`,
+        video_status: `${API_BASE_URL}/check-composition-status`,
+        loop_video_start: `${API_BASE_URL}/start-loop-video-generation`,
+        loop_video_status: `${API_BASE_URL}/check-loop-video-status`,
+    };
 
-    loop_video_start: `${API_BASE_URL}/start-loop-video-generation`,
-    loop_video_status: `${API_BASE_URL}/check-loop-video-status`,
+    let currentRoom = 'image';
+    let pollingIntervals = {};
+    let currentAudio = null;
 
-};
+    // --- HTML要素の取得 ---
+    const sidebar = document.getElementById('sidebar');
+    const sidebarToggleBtn = document.getElementById('sidebar-toggle-btn');
+    const sendBtn = document.getElementById('send-btn');
+    const playBtn = document.getElementById('play-btn');
+    const promptInput = document.getElementById('prompt-input');
+    const loadingDiv = document.getElementById('loading');
+    const roomTitle = document.getElementById('room-title');
+    const navButtons = document.querySelectorAll('.nav-btn');
+    const homeBtn = document.getElementById('home-btn');
+    const chatArea = document.getElementById('chat-area');
+    const gameContainer = document.getElementById('game-container');
 
-let currentRoom = 'image';
-let pollingInterval;
-let currentAudio = null; 
-
-const chatHistories = {
-    image: '<p class="system-message">静止画生成ルームへようこそ！</p>', // 文言を修正
-    gif: '<p class="system-message">GIF画像生成ルームへようこそ！</p>', // ▼▼▼ GIF用の履歴を追加 ▼▼▼
-    music: '<p class="system-message">音楽生成ルームへようこそ！</p>',
-    video: '<p class="system-message">動画生成ルームへようこそ！</p>', 
-
-    loop_video: '<p class="system-message">ループ動画生成ルームへようこそ！</p>',
-
-};
-
-
-// --- HTML要素の取得 ---
-const sidebar = document.getElementById('sidebar');
-const sidebarToggleBtn = document.getElementById('sidebar-toggle-btn');
-const sendBtn = document.getElementById('send-btn');
-const playBtn = document.getElementById('play-btn');
-const promptInput = document.getElementById('prompt-input');
-const chatHistoryDiv = document.getElementById('chat-history');
-const loadingDiv = document.getElementById('loading');
-const roomTitle = document.getElementById('room-title');
-const navButtons = document.querySelectorAll('.nav-btn');
-const homeBtn = document.getElementById('home-btn'); 
-
-// サイドバー開閉ボタン
-sidebarToggleBtn.addEventListener('click', () => {
-    sidebar.classList.toggle('open');
-});
-
-// タイトルに戻るボタンの処理
-homeBtn.addEventListener('click', () => {
-    window.location.href = 'title.html'; 
-});
-
-
-// ルーム切り替え処理
-navButtons.forEach(button => {
-    button.addEventListener('click', () => {
-        chatHistories[currentRoom] = chatHistoryDiv.innerHTML;
-        currentRoom = button.dataset.room;
-        chatHistoryDiv.innerHTML = chatHistories[currentRoom];
-
-        navButtons.forEach(btn => btn.classList.remove('active'));
-        button.classList.add('active');
-        if (pollingInterval) clearInterval(pollingInterval);
-
-        if (currentRoom === 'image') {
-            roomTitle.textContent = 'AI Image Generator';
-            promptInput.placeholder = '作りたい画像の日本語プロンプトを入力';
-        } else if (currentRoom === 'gif') {
-            roomTitle.textContent = 'AI GIF Generator';
-            promptInput.placeholder = '作りたいGIFアニメの日本語プロンプトを入力';
-        } else if (currentRoom === 'music') {
-            roomTitle.textContent = 'AI Music Generator';
-            promptInput.placeholder = '作りたい音楽の日本語プロンプトを入力';
-        } else if (currentRoom === 'video') {
-            roomTitle.textContent = 'AI Video Generator';
-            promptInput.placeholder = '作りたい動画の日本語プロンプトを入力';
-
-        } else if (currentRoom === 'loop_video') {
-            roomTitle.textContent = 'AI Loop Video Generator';
-            promptInput.placeholder = '作りたいループ動画の日本語プロンプトを入力';
-        }
-
-        chatHistoryDiv.scrollTop = chatHistoryDiv.scrollHeight;
+    // --- イベントリスナーの設定 ---
+    sidebarToggleBtn.addEventListener('click', () => {
+        sidebar.classList.toggle('open');
+        document.querySelector('.container').classList.toggle('sidebar-open');
     });
-});
 
-
-const TRANSLATE_API_URL = 'https://script.google.com/macros/s/AKfycbysDLQt1Di1iGqpJetaW_uEtW2tb0DqSoAq2sDWF-_gpSm8veAUPDtl9BWzaT-t6xOx/exec';
-
-// 送信ボタンの処理
-sendBtn.addEventListener('click', async () => {
-    const japanesePrompt = promptInput.value.trim();
-    if (!japanesePrompt) return;
-
-    addUserMessage(japanesePrompt);
-    loadingDiv.classList.remove('hidden');
-    promptInput.value = '';
-    sendBtn.disabled = true;
-    if (playBtn) playBtn.disabled = true;
-    if (currentAudio) currentAudio = null;
-    if (pollingInterval) clearInterval(pollingInterval);
-
-    try {
-        addSystemMessage('日本語を英語に翻訳中...');
-        const translateResponse = await fetch(`${TRANSLATE_API_URL}?text=${encodeURIComponent(japanesePrompt)}`);
-        if (!translateResponse.ok) throw new Error('翻訳APIでエラーが発生しました。');
-        const translationData = await translateResponse.json();
-        const englishPrompt = translationData.translated;
-
-        addSystemMessage(`翻訳結果: ${englishPrompt}`);
-        console.log(`Translated to English: ${englishPrompt}`);
-
-        if (currentRoom === 'image') {
-            await handleImageGeneration(englishPrompt);
-        } else if (currentRoom === 'gif') {
-            await handleGifGeneration(englishPrompt);
-        } else if (currentRoom === 'music') {
-            await handleMusicGeneration(englishPrompt);
-        } else if (currentRoom === 'video') { 
-            await handleVideoGeneration(englishPrompt);
-        // ▼▼▼ ループ動画ルームの呼び出し処理を追加 ▼▼▼
-        } else if (currentRoom === 'loop_video') {
-            await handleLoopVideoGeneration(englishPrompt);
-        }
-        // ▲▲▲ ここまで ▲▲▲
-
-    } catch (error) {
-        addErrorMessage(error.message);
-        loadingDiv.classList.add('hidden');
-        sendBtn.disabled = false;
-    }
-});
-
-// 再生ボタンの処理
-playBtn.addEventListener('click', () => {
-    if (currentAudio) {
-        // もし現在、音声または動画が一時停止中なら再生する
-        if (currentAudio.paused) {
-            currentAudio.play();
-            playBtn.textContent = '停止';
-        } else {
-            // 再生中なら一時停止する
-            currentAudio.pause();
-            playBtn.textContent = '再生';
-        }
-    }
-});
-
-// Enterキーでの送信
-promptInput.addEventListener('keypress', (event) => {
-    if (event.key === 'Enter' && !event.shiftKey) {
-        event.preventDefault();
-        sendBtn.click();
-    }
-});
-
-
-
-
-
-// --- 画像生成処理（プロキシ統合用） ---
-async function handleImageGeneration(prompt) {
-    try {
-        const response = await fetch(API_ENDPOINTS.image, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ prompt: prompt }),
-        });
-        if (!response.ok) throw new Error(`APIエラー: ${response.statusText}`);
-        
-        const data = await response.json();
-        const responseBody = JSON.parse(data.body); 
-        addImageMessage(responseBody.imageUrl);    
-
-    } catch (error) {
-        addErrorMessage(error.message);
-    } finally {
-        loadingDiv.classList.add('hidden');
-        sendBtn.disabled = false;
-        chatHistoryDiv.scrollTop = chatHistoryDiv.scrollHeight;
-    }
-}
-
-
-
-
-
-
-// handleGifGeneration関数をStep Functions用に全面改訂
-async function handleGifGeneration(prompt) {
-    try {
-        addSystemMessage("GIF生成ワークフローを開始します...");
-        const startResponse = await fetch(API_ENDPOINTS.gif_start, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ prompt: prompt }),
-        });
-        if (!startResponse.ok) throw new Error(`ワークフローの開始に失敗: ${await startResponse.text()}`);
-        
-        const startData = await startResponse.json();
-        const responseBody = JSON.parse(startData.body);
-        const executionArn = responseBody.executionArn;
-
-
-
-        if (!executionArn) throw new Error('実行IDの取得に失敗しました。');
-        addSystemMessage(`実行ID: ${executionArn.split(':').pop()} で生成中です...`);
-
-        pollingInterval = setInterval(async () => {
-            try {
-
-                const statusResponse = await fetch(API_ENDPOINTS.gif_status, {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json'
-                    },
-                    body: JSON.stringify({ executionArn: executionArn })
-                });
-
-
-                // 以降の処理は同じ
-                if (statusResponse.status === 403) throw new Error('認証エラー(403)が発生しました。APIの認証設定を確認してください。');
-                if (!statusResponse.ok) throw new Error(`ステータスの確認に失敗しました: ${statusResponse.status}`);
-
-
-                const statusGif = await statusResponse.json();
-                const statusData = JSON.parse(statusGif.body);
-
-
-
-                if (statusData.status === 'SUCCEEDED') {
-                    clearInterval(pollingInterval);
-                    addSystemMessage("GIF生成が完了しました！");
-                    // outputはさらにJSON文字列になっているので二重にパース
-                    const finalOutput = JSON.parse(statusData.output);
-                    addImageMessage(finalOutput.gifUrl);
-                    loadingDiv.classList.add('hidden');
-                    sendBtn.disabled = false;
-                } else if (statusData.status === 'FAILED') {
-                    clearInterval(pollingInterval);
-                    throw new Error(`生成に失敗しました: ${statusData.output}`);
-                }
-                // 'RUNNING'の間は待機
-            } catch (error) {
-                clearInterval(pollingInterval);
-                addErrorMessage(error.message);
-                loadingDiv.classList.add('hidden');
-                sendBtn.disabled = false;
-            }
-        }, 5000);
-
-    } catch (error) {
-        addErrorMessage(error.message);
-        loadingDiv.classList.add('hidden');
-        sendBtn.disabled = false;
-    }
-}
-
-
-async function handleLoopVideoGeneration(prompt) {
-    try {
-        addSystemMessage("ループ動画生成ワークフローを開始します...");
-        const startResponse = await fetch(API_ENDPOINTS.loop_video_start, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ prompt: prompt }),
-        });
-        if (!startResponse.ok) throw new Error(`ワークフローの開始に失敗: ${await startResponse.text()}`);
-        
-        const startData = await startResponse.json();
-        const responseBody = JSON.parse(startData.body);
-        const executionArn = responseBody.executionArn;
-
-        if (!executionArn) throw new Error('実行IDの取得に失敗しました。');
-        addSystemMessage(`実行ID: ${executionArn.split(':').pop()} で生成中です...`);
-
-        pollingInterval = setInterval(async () => {
-            try {
-                const statusResponse = await fetch(API_ENDPOINTS.loop_video_status, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ executionArn: executionArn })
-                });
-
-                if (!statusResponse.ok) {
-                    const errorText = await statusResponse.text();
-                    throw new Error(`ステータスの確認に失敗しました: ${statusResponse.status} ${errorText}`);
-                }
-
-                const statusGif = await statusResponse.json();
-                const statusData = JSON.parse(statusGif.body);
-
-                if (statusData.status === 'SUCCEEDED') {
-                    clearInterval(pollingInterval);
-                    addSystemMessage("ループ動画生成が完了しました！");
-                    const finalOutput = typeof statusData.output === 'string' ? JSON.parse(statusData.output) : statusData.output;
-                    // 結果は動画なので、addVideoMessage を使用
-                    addVideoMessage(finalOutput.videoUrl);
-                    loadingDiv.classList.add('hidden');
-                    sendBtn.disabled = false;
-                } else if (statusData.status === 'FAILED') {
-                    clearInterval(pollingInterval);
-                    throw new Error(`生成に失敗しました: ${statusData.output}`);
-                }
-            } catch (error) {
-                clearInterval(pollingInterval);
-                addErrorMessage(error.message);
-                loadingDiv.classList.add('hidden');
-                sendBtn.disabled = false;
-            }
-        }, 5000);
-
-    } catch (error) {
-        addErrorMessage(error.message);
-        loadingDiv.classList.add('hidden');
-        sendBtn.disabled = false;
-    }
-}
-
-
-
-
-
-
-// --- 音楽生成処理 ---
-async function handleMusicGeneration(prompt) {
-    try {
-        const startResponse = await fetch(API_ENDPOINTS.music_start, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ prompt: prompt }),
-        });
-        if (!startResponse.ok) throw new Error(`APIエラー (start)`);
-        
-        const startData = await startResponse.json();
-        const responseBody = JSON.parse(startData.body);
-        const predictionId = responseBody.prediction_id;
-
-        if (!predictionId) throw new Error('生成ジョブの開始に失敗。');
-
-        console.log("取得したPrediction ID:", predictionId);
-        
-        pollingInterval = setInterval(async () => {
-            try {
-                const statusResponse = await fetch(API_ENDPOINTS.music_status, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ id: predictionId })
-                });
-                if (!statusResponse.ok) {
-                    clearInterval(pollingInterval);
-                    throw new Error(`APIエラー (status)`);
-                }
-                
-                const statusData = await statusResponse.json();
-                const statusBody = JSON.parse(statusData.body);
-
-                if (statusBody.status === 'succeeded') {
-                    clearInterval(pollingInterval);
-                    addAudioMessage(statusBody.output);
-                    loadingDiv.classList.add('hidden');
-                    sendBtn.disabled = false;
-                } else if (statusBody.status === 'failed' || statusBody.status === 'canceled') {
-                    clearInterval(pollingInterval);
-                    throw new Error(`生成に失敗: ${statusBody.error}`);
-                }
-            } catch (error) {
-                clearInterval(pollingInterval);
-                addErrorMessage(error.message);
-                loadingDiv.classList.add('hidden');
-                sendBtn.disabled = false;
-            }
-        }, 5000);
-
-    } catch (error) {
-        addErrorMessage(error.message);
-        loadingDiv.classList.add('hidden');
-        sendBtn.disabled = false;
-    }
-}
-
-// --- 動画生成処理（3段階非同期） ---
-async function handleVideoGeneration(prompt) {
-    if (pollingInterval) clearInterval(pollingInterval);
-
-    try {
-        addSystemMessage("画像生成と音楽生成を開始します...");
-        const startResponse = await fetch(API_ENDPOINTS.video_start, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ prompt: prompt }),
-        });
-        if (!startResponse.ok) throw new Error(`APIエラー (start)`);
-
-        const startData = await startResponse.json();
-        const responseBody = JSON.parse(startData.body); 
-        
-        const imageS3Url = responseBody.imageUrl;
-        const musicPredictionId = responseBody.prediction_id;
-
-        if (!imageS3Url || !musicPredictionId) throw new Error('生成ジョブの開始に失敗。');
-        
-        addImageMessage(imageS3Url);
-        addSystemMessage("音楽の生成完了を待っています...");
-
-        pollingInterval = setInterval(async () => {
-            try {
-                const musicStatusResponse = await fetch(API_ENDPOINTS.music_composition_check, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({
-                        image_s3_url: imageS3Url,
-                        music_prediction_id: musicPredictionId
-                    })
-                });
-                if (!musicStatusResponse.ok) throw new Error(`APIエラー (music_composition_check)`);
-
-                const musicStatusData = await musicStatusResponse.json();
-                const musicStatusBody = JSON.parse(musicStatusData.body); 
-
-                if (musicStatusBody.status === 'composition_started') {
-                    clearInterval(pollingInterval);
-                    const executionArn = musicStatusBody.execution_arn;
-                    addSystemMessage("動画の合成を開始しました...");
-                    startSecondPolling(executionArn);
-                } else if (musicStatusBody.status === 'failed') {
-                    clearInterval(pollingInterval);
-                    throw new Error(`音楽生成に失敗: ${musicStatusBody.error}`);
-                }
-            } catch (error) {
-                clearInterval(pollingInterval);
-                addErrorMessage(error.message);
-                loadingDiv.classList.add('hidden');
-                sendBtn.disabled = false;
-            }
-        }, 5000);
-
-    } catch (error) {
-        addErrorMessage(error.message);
-        loadingDiv.classList.add('hidden');
-        sendBtn.disabled = false;
-    }
-}
-
-// --- 第2ポーリング：動画合成の完了を確認する関数 ---
-function startSecondPolling(executionArn) {
-    pollingInterval = setInterval(async () => {
-        try {
-            const videoStatusResponse = await fetch(API_ENDPOINTS.video_status, { 
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ execution_arn: executionArn })
-            });
-            if (!videoStatusResponse.ok) throw new Error(`APIエラー (video_status)`);
-
-            const videoStatusData = await videoStatusResponse.json();
-            const videoStatusBody = JSON.parse(videoStatusData.body); 
+    homeBtn.addEventListener('click', () => {
+        window.location.href = 'index.html';
+    });
+    
+    navButtons.forEach(button => {
+        button.addEventListener('click', () => {
+            removeNotification(button);
+            const newRoom = button.dataset.room;
+            currentRoom = newRoom;
             
-            if (videoStatusBody.status === 'SUCCEEDED') {
-                clearInterval(pollingInterval);
-                addVideoMessage(videoStatusBody.output); 
+            document.querySelectorAll('.chat-history-panel').forEach(panel => {
+                panel.classList.remove('active-panel');
+            });
+
+            if (newRoom === 'game') {
+                roomTitle.textContent = 'ミニゲーム';
+                chatArea.classList.add('hidden');
+                gameContainer.classList.remove('hidden');
+            } else {
+                gameContainer.classList.add('hidden');
+                chatArea.classList.remove('hidden');
+                const targetPanel = document.getElementById(`chat-history-${newRoom}`);
+                if(targetPanel) targetPanel.classList.add('active-panel');
+
+                const roomConfig = {
+                    image: { title: 'AI Image Generator', placeholder: '作りたい画像の日本語プロンプトを入力' },
+                    gif: { title: 'AI GIF Generator', placeholder: '作りたいGIFアニメの日本語プロンプトを入力' },
+                    music: { title: 'AI Music Generator', placeholder: '作りたい音楽の日本語プロンプトを入力' },
+                    video: { title: 'AI Video Generator', placeholder: '作りたい動画の日本語プロンプトを入力' },
+                    loop_video: { title: 'AI Loop Video Generator', placeholder: '作りたいループ動画の日本語プロンプトを入力' }
+                };
+                roomTitle.textContent = roomConfig[newRoom].title;
+                promptInput.placeholder = roomConfig[newRoom].placeholder;
+            }
+            navButtons.forEach(btn => btn.classList.remove('active'));
+            button.classList.add('active');
+
+                        // ルーム切り替え時に再生ボタンの状態を更新する
+            const activePanel = document.querySelector('.chat-history-panel.active-panel');
+            let lastMediaElement = null;
+
+            if (activePanel) {
+                // パネル内の最後のaudioまたはvideo要素を取得
+                lastMediaElement = activePanel.querySelector('audio:last-of-type, video:last-of-type');
+            }
+
+            if (lastMediaElement) {
+                currentAudio = lastMediaElement;
+                playBtn.disabled = false;
+                // メディアの状態に応じてボタンのテキストを正しく設定
+                playBtn.textContent = currentAudio.paused ? '再生' : '停止';
+            } else {
+                // 再生するメディアがない場合はボタンを無効化
+                currentAudio = null;
+                playBtn.disabled = true;
+                playBtn.textContent = '再生';
+            }
+
+
+        });
+    });
+
+    const TRANSLATE_API_URL = 'https://script.google.com/macros/s/AKfycbysDLQt1Di1iGqpJetaW_uEtW2tb0DqSoAq2sDWF-_gpSm8veAUPDtl9BWzaT-t6xOx/exec';
+
+    sendBtn.addEventListener('click', async () => {
+        const japanesePrompt = promptInput.value.trim();
+        if (!japanesePrompt) return;
+        const startedRoom = currentRoom;
+
+        if (pollingIntervals[startedRoom]) {
+            clearInterval(pollingIntervals[startedRoom]);
+            delete pollingIntervals[startedRoom];
+        }
+
+        addUserMessage(japanesePrompt, startedRoom);
+        loadingDiv.classList.remove('hidden');
+        promptInput.value = '';
+        sendBtn.disabled = true;
+        if (playBtn) playBtn.disabled = true;
+
+        try {
+            addSystemMessage('日本語を英語に翻訳中...', startedRoom);
+            const res = await fetch(`${TRANSLATE_API_URL}?text=${encodeURIComponent(japanesePrompt)}`);
+            if (!res.ok) throw new Error('翻訳APIエラー');
+            const data = await res.json();
+            const englishPrompt = data.translated;
+            addSystemMessage(`翻訳結果: ${englishPrompt}`, startedRoom);
+
+            const generationHandlers = {
+                image: handleImageGeneration,
+                gif: handleGifGeneration,
+                music: handleMusicGeneration,
+                video: handleVideoGeneration,
+                loop_video: handleLoopVideoGeneration
+            };
+            await generationHandlers[startedRoom](englishPrompt, startedRoom);
+
+            if (startedRoom === 'image') {
                 loadingDiv.classList.add('hidden');
                 sendBtn.disabled = false;
-            } else if (videoStatusBody.status === 'FAILED') {
-                clearInterval(pollingInterval);
-                throw new Error(`動画合成に失敗しました。`);
             }
         } catch (error) {
-            clearInterval(pollingInterval);
-            addErrorMessage(error.message);
+            addErrorMessage(error.message, startedRoom);
             loadingDiv.classList.add('hidden');
             sendBtn.disabled = false;
         }
-    }, 10000); 
-}
+    });
 
-
-
-function addUserMessage(text) {
-    const userMessage = document.createElement('div');
-    userMessage.classList.add('user-message');
-    userMessage.textContent = text;
-    chatHistoryDiv.appendChild(userMessage);
-}
-
-
-
-function addImageMessage(url, fileName = 'generated.png') {
-    const container = document.createElement('div');
-    container.classList.add('image-container'); // コンテナクラスは共通に
-    
-    const img = document.createElement('img');
-    img.src = url;
-    container.appendChild(img);
-
-    // ダウンロードボタンを追加
-    const downloadBtn = createDownloadButton(url, fileName);
-    container.appendChild(downloadBtn);
-
-    chatHistoryDiv.appendChild(container);
-    chatHistoryDiv.scrollTop = chatHistoryDiv.scrollHeight;
-}
-
-function addAudioMessage(url, fileName = 'generated.mp3') {
-    const container = document.createElement('div');
-    container.classList.add('audio-container'); // コンテナクラスは共通に
-    
-    const audio = document.createElement('audio');
-    audio.controls = true; 
-    audio.preload = 'auto';
-    audio.src = url;
-    container.appendChild(audio);
-
-    // ダウンロードボタンを追加
-    const downloadBtn = createDownloadButton(url, fileName);
-    container.appendChild(downloadBtn);
-    
-    currentAudio = audio;
-    playBtn.disabled = false; // 再生ボタンを有効化
-    
-    chatHistoryDiv.appendChild(container);
-    chatHistoryDiv.scrollTop = chatHistoryDiv.scrollHeight;
-}
-
-// script.js
-
-function addVideoMessage(url, fileName = 'generated.mp4') {
-    const container = document.createElement('div');
-    container.classList.add('video-container');
-    
-    const video = document.createElement('video');
-
-    video.preload = 'auto';
-    video.src = url;
-    video.playsInline = true;
-
-    // もし現在のルームが「ループ動画」の場合、特別な属性を追加
-    if (currentRoom === 'loop_video') {
-        video.loop = true;
-        video.autoplay = true;
-        video.muted = true;
-        video.controls = false; // ← コントロールバーを非表示に
-        playBtn.textContent = '停止'; // ← ボタンのテキストを初期設定
-    } else {
-        video.controls = true; // ← ループ動画以外では表示
-    }
-
-    container.appendChild(video);
-
-    const downloadBtn = createDownloadButton(url, fileName);
-    container.appendChild(downloadBtn);
-
-    currentAudio = video; 
-    playBtn.disabled = false;
-
-    chatHistoryDiv.appendChild(container);
-    chatHistoryDiv.scrollTop = chatHistoryDiv.scrollHeight;
-}
-
-function addErrorMessage(text) {
-    const errorMessage = document.createElement('p');
-    errorMessage.classList.add('error-message');
-    errorMessage.textContent = `エラーが発生しました: ${text}`;
-    chatHistoryDiv.appendChild(errorMessage);
-    chatHistoryDiv.scrollTop = chatHistoryDiv.scrollHeight;
-}
-
-function addSystemMessage(text) {
-    const systemMessage = document.createElement('p');
-    systemMessage.classList.add('system-message');
-    systemMessage.textContent = text;
-    chatHistoryDiv.appendChild(systemMessage);
-    chatHistoryDiv.scrollTop = chatHistoryDiv.scrollHeight;
-}
-
-
-
-// ダウンロードボタンを作成する共通関数
-function createDownloadButton(url, fileName) {
-    const button = document.createElement('button');
-    button.classList.add('download-btn');
-    button.textContent = '⬇️'; // ダウンロードアイコン
-    button.title = 'ダウンロード';
-    button.onclick = () => handleDownload(url, fileName);
-    return button;
-}
-
-// ファイルをダウンロードする関数
-async function handleDownload(url, fileName) {
-    try {
-        // fetchを使用してファイルをBlobとして取得
-        const response = await fetch(url);
-        if (!response.ok) {
-            throw new Error('ファイルの取得に失敗しました。');
+    playBtn.addEventListener('click', () => {
+        if (currentAudio) {
+            currentAudio.paused ? currentAudio.play() : currentAudio.pause();
+            playBtn.textContent = currentAudio.paused ? '再生' : '停止';
         }
-        const blob = await response.blob();
+    });
 
-        // Blobからダウンロード用のURLを生成
-        const blobUrl = window.URL.createObjectURL(blob);
-
-        // aタグを生成してダウンロードを実行
-        const a = document.createElement('a');
-        a.style.display = 'none';
-        a.href = blobUrl;
-        a.download = fileName; // ファイル名を指定
-        document.body.appendChild(a);
-        a.click();
-
-        // 後片付け
-        window.URL.revokeObjectURL(blobUrl);
-        document.body.removeChild(a);
-
-    } catch (error) {
-        console.error('ダウンロードエラー:', error);
-        // CORSエラーなどでfetchが失敗した場合のフォールバック
-        // 新しいタブでURLを開くだけにする
-        window.open(url, '_blank');
-        addErrorMessage('ダウンロードに失敗しました。ファイルは新しいタブで開きます。CORS設定を確認してください。');
-    }
-}
-
-
-
-window.addEventListener('load', () => {
+    promptInput.addEventListener('keypress', (e) => {
+        if (e.key === 'Enter' && !e.shiftKey) {
+            e.preventDefault();
+            sendBtn.click();
+        }
+    });
+    
+    // --- 初期化処理 ---
     const params = new URLSearchParams(window.location.search);
-    const room = params.get('room');
-
-    if (room) {
-        const targetButton = document.querySelector(`.nav-btn[data-room="${room}"]`);
-        if (targetButton) {
-            targetButton.click();
-        }
+    const initialRoom = params.get('room');
+    if (initialRoom) {
+        document.querySelector(`.nav-btn[data-room="${initialRoom}"]`)?.click();
     } else {
-        // デフォルトのルームの履歴を表示
-        chatHistoryDiv.innerHTML = chatHistories[currentRoom];
+        document.getElementById('chat-history-image').classList.add('active-panel');
+    }
+
+    // --- メッセージ表示関連の関数 ---
+    function showNotification(room) {
+        const targetButton = document.querySelector(`.nav-btn[data-room="${room}"]`);
+        if (!targetButton || targetButton.querySelector('.notification-popup')) return;
+        const notification = document.createElement('span');
+        notification.className = 'notification-popup';
+        notification.textContent = '完了';
+        targetButton.appendChild(notification);
+    }
+
+    function removeNotification(button) {
+        button.querySelector('.notification-popup')?.remove();
+    }
+    
+    function appendMessageToPanel(room, element) {
+        const targetPanel = document.getElementById(`chat-history-${room}`);
+        if (targetPanel) {
+            targetPanel.appendChild(element);
+            targetPanel.scrollTop = targetPanel.scrollHeight;
+        }
+    }
+
+    function addUserMessage(text, room) {
+        const userMessage = document.createElement('div');
+        userMessage.classList.add('user-message');
+        userMessage.textContent = text;
+        appendMessageToPanel(room, userMessage);
+    }
+
+    function addImageMessage(url, room, fileName = 'generated.png') {
+        const container = document.createElement('div');
+        container.classList.add('image-container');
+        const img = document.createElement('img');
+        img.src = url;
+        img.crossOrigin = "anonymous";
+        container.appendChild(img);
+        const buttonGroup = document.createElement('div');
+        buttonGroup.classList.add('button-group');
+        const copyBtn = document.createElement('button');
+        copyBtn.textContent = '📋 コピー';
+        copyBtn.onclick = () => handleCopyToClipboard(url);
+        buttonGroup.appendChild(copyBtn);
+        const downloadBtn = createDownloadButton(url, fileName);
+        buttonGroup.appendChild(downloadBtn);
+        container.appendChild(buttonGroup);
+        appendMessageToPanel(room, container);
+    }
+
+    function addAudioMessage(url, room, fileName = 'generated.mp3') {
+        const container = document.createElement('div');
+        container.classList.add('audio-container');
+        const audio = document.createElement('audio');
+        audio.controls = true;
+        audio.src = url;
+        container.appendChild(audio);
+        const downloadBtn = createDownloadButton(url, fileName);
+        container.appendChild(downloadBtn);
+        appendMessageToPanel(room, container);
+        if(room === currentRoom){
+            currentAudio = audio;
+            playBtn.disabled = false;
+            playBtn.textContent = '再生';
+        }
+    }
+    
+    function addVideoMessage(url, room, fileName = 'generated.mp4') {
+        const container = document.createElement('div');
+        container.classList.add('video-container');
+        const video = document.createElement('video');
+        video.controls = true;
+        video.src = url;
+        video.playsInline = true;
+        if (room === 'loop_video') {
+            video.loop = true;
+            video.autoplay = true;
+            video.muted = true;
+        }
+        container.appendChild(video);
+        const downloadBtn = createDownloadButton(url, fileName);
+        container.appendChild(downloadBtn);
+        appendMessageToPanel(room, container);
+        if(room === currentRoom){
+            currentAudio = video;
+            playBtn.disabled = false;
+            playBtn.textContent = video.autoplay ? '停止' : '再生';
+        }
+    }
+    
+    function addErrorMessage(text, room) {
+        const p = document.createElement('p');
+        p.className = 'error-message';
+        p.textContent = `エラーが発生しました: ${text}`;
+        appendMessageToPanel(room, p);
+    }
+
+    function addSystemMessage(text, room) {
+        const p = document.createElement('p');
+        p.className = 'system-message';
+        p.textContent = text;
+        appendMessageToPanel(room, p);
+    }
+
+    // --- 各種生成処理 ---
+
+    async function handleImageGeneration(prompt, room) {
+        try {
+            const response = await fetch(API_ENDPOINTS.image, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ prompt: prompt }),
+            });
+            if (!response.ok) throw new Error(await response.text());
+            const data = await response.json();
+            const responseBody = typeof data.body === 'string' ? JSON.parse(data.body) : data.body;
+            if (responseBody && responseBody.imageUrl) {
+                addImageMessage(responseBody.imageUrl, room);
+                showNotification(room);
+            } else {
+                throw new Error('APIの応答に画像URLが含まれていませんでした。');
+            }
+        } catch (error) {
+            throw error; // エラーを呼び出し元に伝達し、UI処理を一元化
+        }
+    }
+
+    // ▼▼▼ 新設: ポーリング処理を共通化する関数 ▼▼▼
+    function startPolling(apiEndpoint, payload, room, resultHandler) {
+        if (pollingIntervals[room]) {
+            clearInterval(pollingIntervals[room]);
+        }
+        pollingIntervals[room] = setInterval(async () => {
+            try {
+                const statusResponse = await fetch(apiEndpoint, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(payload)
+                });
+                if (!statusResponse.ok) throw new Error(await statusResponse.text());
+
+                const statusBody = await statusResponse.json();
+                const statusData = typeof statusBody.body === 'string' ? JSON.parse(statusBody.body) : statusBody.body;
+                
+                const status = statusData.status;
+                const isFinished = ['SUCCEEDED', 'FAILED', 'succeeded', 'failed', 'canceled'].includes(status);
+                
+                if (isFinished) {
+                    clearInterval(pollingIntervals[room]);
+                    delete pollingIntervals[room];
+
+                    if (status === 'SUCCEEDED' || status === 'succeeded') {
+                        resultHandler(statusData); // 各機能ごとの成功処理を呼び出す
+                    } else {
+                        throw new Error(statusData.output || statusData.error || '不明なエラーが発生しました');
+                    }
+                    
+                    
+                    loadingDiv.classList.add('hidden');
+                    sendBtn.disabled = false;
+                    
+                }
+            } catch (error) {
+                clearInterval(pollingIntervals[room]);
+                delete pollingIntervals[room];
+                addErrorMessage(error.message, room);
+                
+                loadingDiv.classList.add('hidden');
+                sendBtn.disabled = false;
+                
+            }
+        }, 5000);
+    }
+
+    async function handleGifGeneration(prompt, room) {
+        try {
+            addSystemMessage("GIF生成ワークフローを開始します...", room);
+            const startResponse = await fetch(API_ENDPOINTS.gif_start, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ prompt: prompt }) });
+            if (!startResponse.ok) throw new Error(await startResponse.text());
+            const startBody = await startResponse.json();
+            const executionArn = (typeof startBody.body === 'string' ? JSON.parse(startBody.body) : startBody.body).executionArn;
+            if (!executionArn) throw new Error('実行IDの取得に失敗。');
+            addSystemMessage(`実行ID: ${executionArn.split(':').pop()} で生成中です...`, room);
+
+            // 共通ポーリング関数を呼び出す
+            startPolling(API_ENDPOINTS.gif_status, { executionArn }, room, (statusData) => {
+                const finalOutput = typeof statusData.output === 'string' ? JSON.parse(statusData.output) : statusData.output;
+                addSystemMessage("GIF生成が完了しました！", room);
+                addImageMessage(finalOutput.gifUrl, room, 'generated.gif');
+                showNotification(room);
+            });
+        } catch (error) {
+            addErrorMessage(error.message, room);
+            
+            loadingDiv.classList.add('hidden');
+            sendBtn.disabled = false;
+            
+        }
+    }
+
+    async function handleMusicGeneration(prompt, room) {
+        try {
+            addSystemMessage("音楽生成を開始します...", room);
+            const startResponse = await fetch(API_ENDPOINTS.music_start, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ prompt: prompt }) });
+            if (!startResponse.ok) throw new Error(`APIエラー (start)`);
+            const startBody = await startResponse.json();
+            const predictionId = (typeof startBody.body === 'string' ? JSON.parse(startBody.body) : startBody.body).prediction_id;
+            if (!predictionId) throw new Error('生成ジョブの開始に失敗。');
+            addSystemMessage(`予測ID: ${predictionId} で生成中です...`, room);
+
+            startPolling(API_ENDPOINTS.music_status, { id: predictionId }, room, (statusData) => {
+                addSystemMessage("音楽が完成しました！", room);
+                addAudioMessage(statusData.output, room);
+                showNotification(room);
+            });
+        } catch (error) {
+            addErrorMessage(error.message, room);
+            if(room === currentRoom) {
+                loadingDiv.classList.add('hidden');
+                sendBtn.disabled = false;
+            }
+        }
+    }
+    
+    async function handleLoopVideoGeneration(prompt, room) {
+        try {
+            addSystemMessage("ループ動画生成ワークフローを開始します...", room);
+            const startResponse = await fetch(API_ENDPOINTS.loop_video_start, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ prompt: prompt }) });
+            if (!startResponse.ok) throw new Error(await startResponse.text());
+            const startBody = await startResponse.json();
+            const executionArn = (typeof startBody.body === 'string' ? JSON.parse(startBody.body) : startBody.body).executionArn;
+            if (!executionArn) throw new Error('実行IDの取得に失敗しました。');
+            addSystemMessage(`実行ID: ${executionArn.split(':').pop()} で生成中です...`, room);
+
+            startPolling(API_ENDPOINTS.loop_video_status, { executionArn }, room, (statusData) => {
+                const finalOutput = typeof statusData.output === 'string' ? JSON.parse(statusData.output) : statusData.output;
+                addSystemMessage("ループ動画生成が完了しました！", room);
+                // ループ動画の場合は finalOutput.videoUrl を使用
+                addVideoMessage(finalOutput.videoUrl, room, 'generated_loop.mp4');
+                showNotification(room);
+            });
+        } catch (error) {
+            // ▼▼▼ 修正点 ▼▼▼
+            // 条件分岐を削除し、エラー時に必ずUIをリセットする
+            addErrorMessage(error.message, room);
+            loadingDiv.classList.add('hidden');
+            sendBtn.disabled = false;
+            // ▲▲▲ 修正点 ▲▲▲
+        }
+    }
+
+
+    // handleVideoGeneration関数の前あたりに追加
+function startMusicCheckPolling(apiEndpoint, payload, room, resultHandler) {
+    const pollKey = `${room}-music-check`;
+    if (pollingIntervals[pollKey]) {
+        clearInterval(pollingIntervals[pollKey]);
+    }
+
+    pollingIntervals[pollKey] = setInterval(async () => {
+        try {
+            const statusResponse = await fetch(apiEndpoint, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(payload)
+            });
+            if (!statusResponse.ok) throw new Error(await statusResponse.text());
+
+            const statusBody = await statusResponse.json();
+            const statusData = typeof statusBody.body === 'string' ? JSON.parse(statusBody.body) : statusBody.body;
+            
+            const status = statusData.status;
+            
+            // ▼▼▼ 修正点：'composition_started'でも停止するように条件を変更 ▼▼▼
+            const isFinished = ['composition_started', 'FAILED', 'failed', 'canceled'].includes(status);
+            
+            if (isFinished) {
+                clearInterval(pollingIntervals[pollKey]);
+                delete pollingIntervals[pollKey];
+
+                if (status === 'composition_started') {
+                    resultHandler(statusData); // 成功時の処理を呼び出す
+                } else {
+                    // 失敗した場合はエラーを投げる
+                    throw new Error(statusData.output || statusData.error || '音楽生成または動画合成の開始に失敗しました');
+                }
+            }
+            // isFinishedがfalseの場合は、次のインターバルでポーリングを続ける
+        } catch (error) {
+            clearInterval(pollingIntervals[pollKey]);
+            delete pollingIntervals[pollKey];
+            addErrorMessage(error.message, room);
+            loadingDiv.classList.add('hidden');
+            sendBtn.disabled = false;
+        }
+    }, 5000); // 5秒ごとに確認
+}
+
+
+
+    async function handleVideoGeneration(prompt, room) {
+        try {
+            addSystemMessage("画像生成と音楽生成を開始します...", room);
+            const startResponse = await fetch(API_ENDPOINTS.video_start, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ prompt: prompt }) });
+            if (!startResponse.ok) throw new Error(`APIエラー (start)`);
+            const responseBody = JSON.parse((await startResponse.json()).body);
+            const imageS3Url = responseBody.imageUrl;
+            const musicPredictionId = responseBody.prediction_id;
+            if (!imageS3Url || !musicPredictionId) throw new Error('生成ジョブの開始に失敗。');
+            addImageMessage(imageS3Url, room);
+            addSystemMessage("音楽の生成完了を待っています...", room);
+            
+            const musicPollKey = `${room}-music`;
+            startMusicCheckPolling(
+                API_ENDPOINTS.music_composition_check, 
+                { image_s3_url: imageS3Url, music_prediction_id: musicPredictionId }, 
+                room, // room名（キー識別に利用）
+                (musicStatusBody) => { // 成功時のコールバック関数
+                    const executionArn = musicStatusBody.execution_arn;
+                    addSystemMessage("動画の合成を開始しました...", room);
+                    startSecondPolling(executionArn, room);
+                }
+            );
+        } catch (error) {
+            // ▼▼▼ 修正点 ▼▼▼
+            // 条件分岐を削除し、エラー時に必ずUIをリセットする
+            addErrorMessage(error.message, room);
+            loadingDiv.classList.add('hidden');
+            sendBtn.disabled = false;
+            // ▲▲▲ 修正点 ▲▲▲
+        }
+    }
+
+    function startSecondPolling(executionArn, room) {
+        const videoPollKey = `${room}-video`;
+        startPolling(API_ENDPOINTS.video_status, { execution_arn: executionArn }, videoPollKey, (videoStatusBody) => {
+            addSystemMessage("動画が完成しました！", room);
+
+            // videoStatusBody.output には動画URLが直接入っているため、
+            // JSON.parse() を使わずにそのまま videoUrl として利用する。
+            const videoUrl = videoStatusBody.output;
+
+            // videoUrlが正しく取得できているか念のためチェック
+            if (videoUrl && typeof videoUrl === 'string' && videoUrl.startsWith('http')) {
+                addVideoMessage(videoUrl, room, 'generated_video.mp4');
+                showNotification(room);
+            } else {
+                addErrorMessage('受信したデータから有効な動画URLを取得できませんでした。', room);
+                console.error('Invalid video URL received:', videoStatusBody);
+            }
+
+            // ▲▲▲ ここまで修正 ▲▲▲
+        });
+    }
+
+    // --- ユーティリティ関数 ---
+    function createDownloadButton(url, fileName) {
+        const button = document.createElement('button');
+        button.classList.add('download-btn');
+        button.textContent = '⬇️';
+        button.title = 'ダウンロード';
+        button.onclick = () => handleDownload(url, fileName);
+        return button;
+    }
+
+    async function handleDownload(url, fileName) {
+        try {
+            const response = await fetch(url, { mode: 'cors' });
+            if (!response.ok) throw new Error('ファイルの取得に失敗しました。');
+            const blob = await response.blob();
+            const blobUrl = window.URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.style.display = 'none';
+            a.href = blobUrl;
+            a.download = fileName;
+            document.body.appendChild(a);
+            a.click();
+            window.URL.revokeObjectURL(blobUrl);
+            a.remove();
+        } catch (error) {
+            console.error('ダウンロードエラー:', error);
+            window.open(url, '_blank');
+            addErrorMessage('ダウンロードに失敗しました。新しいタブでファイルを開きます。', currentRoom);
+        }
+    }
+
+    async function handleCopyToClipboard(imageUrl) {
+        try {
+            if (!navigator.clipboard || !navigator.clipboard.write) {
+                throw new Error('お使いのブラウザはクリップボードAPIをサポートしていません。');
+            }
+            const blob = await new Promise((resolve, reject) => {
+                const img = new Image();
+                img.crossOrigin = 'Anonymous';
+                img.onload = () => {
+                    const canvas = document.createElement('canvas');
+                    canvas.width = img.naturalWidth;
+                    canvas.height = img.naturalHeight;
+                    const ctx = canvas.getContext('2d');
+                    ctx.drawImage(img, 0, 0);
+                    canvas.toBlob(resolve, 'image/png');
+                };
+                img.onerror = () => reject(new Error('画像の読み込みに失敗しました。'));
+                img.src = imageUrl;
+            });
+            if (!blob) throw new Error('画像形式の変換に失敗しました。');
+            await navigator.clipboard.write([ new ClipboardItem({ 'image/png': blob }) ]);
+            addSystemMessage('画像をクリップボードにコピーしました！', currentRoom);
+        } catch (error) {
+            console.error('コピー失敗:', error);
+            addErrorMessage(`コピーに失敗しました: ${error.message}`, currentRoom);
+        }
     }
 });
